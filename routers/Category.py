@@ -203,18 +203,15 @@ def address(
         return new_address
 
 
-
-
-
 # post item
 
 
 @router.post("/post_items/{subcategory_id}/{brand_id}/{model_id}")
 def post_item(
-    subcategory_id : str,
-    brand_id:str,
-    model_id:str,
-    user_id:str,
+    subcategory_id: str,
+    brand_id: str,
+    model_id: str,
+    user_id: str,
     style: Optional[str] = Form(None),
     feature: Optional[str] = Form(None),
     milage: Optional[str] = Form(None),
@@ -229,88 +226,88 @@ def post_item(
     set_product_weight: str = Form(...),
     set_price: float = Form(...),
     file: List[UploadFile] = File(...),
-    db: Session = Depends(database.get_db)
-):  
+    db: Session = Depends(database.get_db),
+):
 
-    subcategory = db.query(models.SubCategory).filter(subcategory_id == models.SubCategory.subcategory_id).first()
+    subcategory = (
+        db.query(models.SubCategory)
+        .filter(subcategory_id == models.SubCategory.subcategory_id)
+        .first()
+    )
 
-    category_name = db.query(models.Category).filter(models.Category.cat_id == models.SubCategory.cat_id).filter(models.SubCategory.subcategory_id == subcategory_id).first()
+    category_name = (
+        db.query(models.Category)
+        .filter(models.Category.cat_id == models.SubCategory.cat_id)
+        .filter(models.SubCategory.subcategory_id == subcategory_id)
+        .first()
+    )
 
+    brand_name = (
+        db.query(models.Brand).filter(models.Brand.brand_id == brand_id).first()
+    )
 
-    brand_name = db.query(models.Brand).filter(models.Brand.brand_id == brand_id).first()
+    models_name = (
+        db.query(models.Models).filter(models.Models.model_id == model_id).first()
+    )
 
-    models_name = db.query(models.Models).filter(models.Models.model_id == model_id).first()
-
-    address_id = db.query(models.Address).filter(models.Address.user_id == user_id).first()
-
-
-
-
-
+    address_id = (
+        db.query(models.Address).filter(models.Address.user_id == user_id).first()
+    )
 
     adding_item = models.Post_items(
-
-
-        item_id = shortuuid.uuid(),
-        category_name = category_name.category_name,
-        subcategory_name = subcategory.subcategory_name,
-        brand_name = brand_name.brand_name,
-        model_name = models_name.model_name,
-        style = style,
-        feature = feature,
-        milage = milage,
-        km_driven = km_driven,
-        size = size,
-        condition = condition,
-        firm_on_my_price = firm_on_my_price,
-        returnable = returnable,
-        shipping = shipping,
-        shipping_method = shipping_method,
-        description = description,
-        set_product_weight = set_product_weight,
-        set_price = set_price,
+        item_id=shortuuid.uuid(),
+        category_name=category_name.category_name,
+        subcategory_name=subcategory.subcategory_name,
+        brand_name=brand_name.brand_name,
+        model_name=models_name.model_name,
+        style=style,
+        feature=feature,
+        milage=milage,
+        km_driven=km_driven,
+        size=size,
+        condition=condition,
+        firm_on_my_price=firm_on_my_price,
+        returnable=returnable,
+        shipping=shipping,
+        shipping_method=shipping_method,
+        description=description,
+        set_product_weight=set_product_weight,
+        set_price=set_price,
         # user_id = user_id,
-        cat_id = category_name.cat_id,
-        subcategory_id = subcategory.subcategory_id,
-        brand_id = brand_name.brand_id,
-        model_id = models_name.model_id,
-        address_id = address_id.address_id
-
+        cat_id=category_name.cat_id,
+        subcategory_id=subcategory.subcategory_id,
+        brand_id=brand_name.brand_id,
+        model_id=models_name.model_id,
+        address_id=address_id.address_id,
     )
     db.add(adding_item)
     db.commit()
     db.refresh(adding_item)
 
-    item = db.query(models.Post_items).filter(models.Post_items.brand_id == brand_id).first()
-
-    
-
+    item = (
+        db.query(models.Post_items)
+        .filter(models.Post_items.brand_id == brand_id)
+        .first()
+    )
 
     # taking images
 
     for i in file:
-        i.filename = f'{shortuuid.uuid()}.jpg'
-        with open("static/images/item_images/"+i.filename, 'wb') as img:
+        i.filename = f"{shortuuid.uuid()}.jpg"
+        with open("static/images/item_images/" + i.filename, "wb") as img:
             shutil.copyfileobj(i.file, img)
-        url = str("static/images/item_images/"+i.filename)
+        url = str("static/images/item_images/" + i.filename)
         new_item_img = models.Images_for_item(
-            img_id = shortuuid.uuid(),
-            url = url,
-            item_id = item.item_id
-            
+            img_id=shortuuid.uuid(), url=url, item_id=item.item_id
         )
         db.add(new_item_img)
         db.commit()
         db.refresh(new_item_img)
 
-        return{'Item Post'}
+        return {"Item Post"}
 
 
-
-
-
-
-@router.get('/get_post_items/',response_model = List[schemas.get_item])
+@router.get("/get_post_items/", response_model=List[schemas.get_item])
 def get_items(db: Session = Depends(database.get_db)):
 
     get_items = db.query(models.Post_items).all()
