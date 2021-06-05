@@ -10,17 +10,45 @@ class Category(BaseModel):
     image: str
 
 
+class Get_category(BaseModel):
+    category_name:str
+    class Config():
+        orm_mode = True
+
+
 class SubCategory(BaseModel):
     subcategory_name: str
     image: str
+
+
+
+class Get_SubCategory(BaseModel):
+    subcategory_name: str
+    class Config():
+        orm_mode = True
 
 
 class Brand(BaseModel):
     brand_name: str
 
 
+
+class Get_brand(BaseModel):
+    brand_name: str
+    class Config():
+        orm_mode = True
+
+
 class Models(BaseModel):
     model_name: str
+
+
+
+class Get_models(BaseModel):
+    model_name:str
+    class Config():
+        orm_mode = True
+
 
 
 class Post_items(BaseModel):
@@ -73,3 +101,4 @@ class Images_for_item(BaseModel):
 class get_item(Post_items):
     address: Get_address
     image_for_item: List[Images_for_item] = []
+

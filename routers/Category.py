@@ -1,4 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status, File, Form, UploadFile
+from pydantic.utils import get_model
+from sqlalchemy.sql.functions import mode
 from sql_app import database, schemas, models
 from sqlalchemy.orm import Session
 
@@ -10,6 +12,9 @@ from geopy.geocoders import Nominatim
 
 
 router = APIRouter(tags=["Add Category"])
+
+
+# adding categories to database
 
 
 @router.post("/add_category/")
@@ -27,7 +32,7 @@ def add_category(
     )
 
     if checking_category:
-        return {"Category Already added"}
+        return {"Category already added"}
     else:
         # adding new category
 
@@ -48,56 +53,56 @@ def add_category(
         return {"Category Added"}
 
 
-@router.post("/add_subcategory/{category_id}")
+# adding subcategory to category
+
+
+@router.post("/add_subcategory/{category_name}")
 def subcategory(
-    category_id: str,
+    category_name: str,
     subcategory_name: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(database.get_db),
 ):
 
-    # checking correct category_id
-
-    checking_category_id = (
-        db.query(models.Category).filter(models.Category.cat_id == category_id).first()
+    cat_id = (
+        db.query(models.Category)
+        .filter(models.Category.category_name == category_name)
+        .first()
     )
 
-    if not checking_category_id:
-        return {"Enter Correct category ID"}
-
+    # checking is there same subcategory added or not
+    checking_subcategory = (
+        db.query(models.SubCategory)
+        .filter(subcategory_name == models.SubCategory.subcategory_name)
+        .first()
+    )
+    if checking_subcategory:
+        return {"SubCategory already Added"}
     else:
-        # checking is there same subcategory added or not
-        checking_subcategory = (
-            db.query(models.SubCategory)
-            .filter(subcategory_name == models.SubCategory.subcategory_name)
-            .first()
+
+        # taking images and adding subcategory to database
+
+        file.filename = f"{shortuuid.uuid()}.jpg"
+        with open("static/images/subcategory_images/" + file.filename, "wb") as img:
+            shutil.copyfileobj(file.file, img)
+        url = str("static/images/subcategory_images/" + file.filename)
+
+        new_subCategory = models.SubCategory(
+            subcategory_name=subcategory_name,
+            subcategory_id=shortuuid.uuid(),
+            image=url,
+            cat_id=cat_id.cat_id,
         )
-        if checking_subcategory:
-            return {"SubCategory already Added"}
-        else:
-            # taking images
-
-            file.filename = f"{shortuuid.uuid()}.jpg"
-            with open("static/images/subcategory_images/" + file.filename, "wb") as img:
-                shutil.copyfileobj(file.file, img)
-            url = str("static/images/subcategory_images/" + file.filename)
-
-            new_subCategory = models.SubCategory(
-                subcategory_name=subcategory_name,
-                subcategory_id=shortuuid.uuid(),
-                image=url,
-                cat_id=category_id,
-            )
-            db.add(new_subCategory)
-            db.commit()
-            db.refresh(new_subCategory)
-            return {"SubCategory added"}
+        db.add(new_subCategory)
+        db.commit()
+        db.refresh(new_subCategory)
+        return {"SubCategory added"}
 
 
-# addind brand_name to brand table
-@router.post("/add_brand_name/{subcategory_id}")
+# adding brand_name to brand table
+@router.post("/add_brand_name/{subcategory_name}")
 def brand(
-    subcategory_id: str,
+    subcategory_name: str,
     request_body: schemas.Brand,
     db: Session = Depends(database.get_db),
 ):
@@ -110,6 +115,12 @@ def brand(
         .first()
     )
 
+    sub_cat_id = (
+        db.query(models.SubCategory)
+        .filter(models.SubCategory.subcategory_name == subcategory_name)
+        .first()
+    )
+
     if checking_brand_name:
         return {"brand already Added"}
 
@@ -118,7 +129,7 @@ def brand(
         new_brand = models.Brand(
             brand_id=shortuuid.uuid(),
             brand_name=request_body.brand_name,
-            subcategory_id=subcategory_id,
+            subcategory_id=sub_cat_id.subcategory_id,
         )
         db.add(new_brand)
         db.commit()
@@ -127,9 +138,11 @@ def brand(
 
 
 # adding models in database
-@router.post("/adding_models/{brand_id}")
+@router.post("/adding_models/{brand_name}")
 def model(
-    brand_id: str, request_body: schemas.Models, db: Session = Depends(database.get_db)
+    brand_name: str,
+    request_body: schemas.Models,
+    db: Session = Depends(database.get_db),
 ):
 
     # checking models already added or not
@@ -140,6 +153,10 @@ def model(
         .first()
     )
 
+    brand_id = (
+        db.query(models.Brand).filter(models.Brand.brand_name == brand_name).first()
+    )
+
     if checking_model:
         return {"models already added"}
 
@@ -148,7 +165,7 @@ def model(
         new_model = models.Models(
             model_id=shortuuid.uuid(),
             model_name=request_body.model_name,
-            brand_id=brand_id,
+            brand_id=brand_id.brand_id,
         )
         db.add(new_model)
         db.commit()
@@ -206,11 +223,11 @@ def address(
 # post item
 
 
-@router.post("/post_items/{subcategory_id}/{brand_id}/{model_id}")
+@router.post("/post_items/{subcategory_name}/{brand_name}/{model_name}")
 def post_item(
-    subcategory_id: str,
-    brand_id: str,
-    model_id: str,
+    subcategory_name: str,
+    brand_name: str,
+    model_name: str,
     user_id: str,
     style: Optional[str] = Form(None),
     feature: Optional[str] = Form(None),
@@ -229,37 +246,36 @@ def post_item(
     db: Session = Depends(database.get_db),
 ):
 
-    subcategory = (
+    get_subcategory = (
         db.query(models.SubCategory)
-        .filter(subcategory_id == models.SubCategory.subcategory_id)
+        .filter(subcategory_name == models.SubCategory.subcategory_name)
         .first()
     )
 
-    category_name = (
-        db.query(models.Category)
+    get_category_name = (
+        db.query(models.models.Category)
         .filter(models.Category.cat_id == models.SubCategory.cat_id)
-        .filter(models.SubCategory.subcategory_id == subcategory_id)
         .first()
     )
 
-    brand_name = (
-        db.query(models.Brand).filter(models.Brand.brand_id == brand_id).first()
+    get_brand_id = (
+        db.query(models.Brand).filter(models.Brand.brand_name == brand_name).first()
     )
 
-    models_name = (
-        db.query(models.Models).filter(models.Models.model_id == model_id).first()
+    get_models_id = (
+        db.query(models.Models).filter(models.Models.model_name == model_name).first()
     )
 
-    address_id = (
+    get_address_id = (
         db.query(models.Address).filter(models.Address.user_id == user_id).first()
     )
 
     adding_item = models.Post_items(
         item_id=shortuuid.uuid(),
-        category_name=category_name.category_name,
-        subcategory_name=subcategory.subcategory_name,
-        brand_name=brand_name.brand_name,
-        model_name=models_name.model_name,
+        category_name=get_category_name.category_name,
+        subcategory_name=get_subcategory.subcategory_name,
+        brand_name=get_brand_id.brand_name,
+        model_name=get_models_id.model_name,
         style=style,
         feature=feature,
         milage=milage,
@@ -274,11 +290,11 @@ def post_item(
         set_product_weight=set_product_weight,
         set_price=set_price,
         # user_id = user_id,
-        cat_id=category_name.cat_id,
-        subcategory_id=subcategory.subcategory_id,
-        brand_id=brand_name.brand_id,
-        model_id=models_name.model_id,
-        address_id=address_id.address_id,
+        cat_id=get_category_name.cat_id,
+        subcategory_id=get_subcategory.subcategory_id,
+        brand_id=get_brand_id.brand_id,
+        model_id=get_models_id.model_id,
+        address_id=get_address_id.address_id,
     )
     db.add(adding_item)
     db.commit()
@@ -286,7 +302,7 @@ def post_item(
 
     item = (
         db.query(models.Post_items)
-        .filter(models.Post_items.brand_id == brand_id)
+        .filter(models.Post_items.brand_name == brand_name)
         .first()
     )
 
@@ -297,6 +313,7 @@ def post_item(
         with open("static/images/item_images/" + i.filename, "wb") as img:
             shutil.copyfileobj(i.file, img)
         url = str("static/images/item_images/" + i.filename)
+
         new_item_img = models.Images_for_item(
             img_id=shortuuid.uuid(), url=url, item_id=item.item_id
         )
@@ -307,9 +324,43 @@ def post_item(
         return {"Item Post"}
 
 
+# GETTING ALL APIS GET
+
+
 @router.get("/get_post_items/", response_model=List[schemas.get_item])
 def get_items(db: Session = Depends(database.get_db)):
 
     get_items = db.query(models.Post_items).all()
 
     return get_items
+
+
+@router.get("/get_categories/", response_model=List[schemas.Get_category])
+def get_categories(db: Session = Depends(database.get_db)):
+
+    get_cat = db.query(models.Category).all()
+
+    return get_cat
+
+
+@router.get("/get_subcategories/", response_model=List[schemas.Get_SubCategory])
+def get_subcategories(db: Session = Depends(database.get_db)):
+
+    get_subcat = db.query(models.SubCategory).all()
+
+    return get_subcat
+
+
+@router.get("/get_brand/", response_model=List[schemas.Get_brand])
+def get_brands(db: Session = Depends(database.get_db)):
+
+    get_brd = db.query(models.Brand).all()
+
+    return get_brd
+
+
+@router.get("/get_models/",response_model=List[schemas.Get_models])
+def get_models(db:Session = Depends(database.get_db)):
+
+    get_mod = db.query(models.Models).all()
+    return get_mod
