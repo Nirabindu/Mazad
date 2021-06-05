@@ -253,7 +253,7 @@ def post_item(
     )
 
     get_category_name = (
-        db.query(models.models.Category)
+        db.query(models.Category)
         .filter(models.Category.cat_id == models.SubCategory.cat_id)
         .first()
     )
@@ -261,6 +261,7 @@ def post_item(
     get_brand_id = (
         db.query(models.Brand).filter(models.Brand.brand_name == brand_name).first()
     )
+
 
     get_models_id = (
         db.query(models.Models).filter(models.Models.model_name == model_name).first()
@@ -359,8 +360,8 @@ def get_brands(db: Session = Depends(database.get_db)):
     return get_brd
 
 
-@router.get("/get_models/",response_model=List[schemas.Get_models])
-def get_models(db:Session = Depends(database.get_db)):
+@router.get("/get_models/", response_model=List[schemas.Get_models])
+def get_models(db: Session = Depends(database.get_db)):
 
     get_mod = db.query(models.Models).all()
     return get_mod
