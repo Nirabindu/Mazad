@@ -1,10 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, status, File, Form, UploadFile
-from pydantic.utils import get_model
-from sqlalchemy.sql.functions import mode
 from sql_app import database, schemas, models
 from sqlalchemy.orm import Session
 
-# from security import hashing, oauth2, tokens
+from security import hashing, oauth2, tokens
 from typing import List, Optional, Dict
 import shortuuid
 import shutil
@@ -176,11 +174,11 @@ def model(
 # getting address
 @router.post("/getting_address/")
 def address(
-    user_id: int,
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
     state: Optional[str] = None,
     district: Optional[str] = None,
+    current_user: schemas.User_login = Depends(oauth2.get_current_user),
     db: Session = Depends(database.get_db),
 ):
 
@@ -191,7 +189,7 @@ def address(
 
         new_address = models.Address(
             address_id=shortuuid.uuid(),
-            user_id=user_id,
+            user_id=current_user.user_id,
             latitude=latitude,
             longitude=longitude,
             address_get=location.address,
@@ -207,7 +205,7 @@ def address(
     else:
         new_address = models.Address(
             address_id=shortuuid.uuid(),
-            user_id=user_id,
+            user_id=current_user.user_id,
             latitude=latitude,
             longitude=longitude,
             state=state,
@@ -228,7 +226,6 @@ def post_item(
     subcategory_name: str,
     brand_name: str,
     model_name: str,
-    user_id: str,
     style: Optional[str] = Form(None),
     feature: Optional[str] = Form(None),
     milage: Optional[str] = Form(None),
@@ -244,7 +241,11 @@ def post_item(
     set_price: float = Form(...),
     file: List[UploadFile] = File(...),
     db: Session = Depends(database.get_db),
+    current_user: schemas.User_login = Depends(oauth2.get_current_user)
 ):
+
+
+
 
     get_subcategory = (
         db.query(models.SubCategory)
@@ -290,7 +291,7 @@ def post_item(
         description=description,
         set_product_weight=set_product_weight,
         set_price=set_price,
-        # user_id = user_id,
+        user_id = user_id,
         cat_id=get_category_name.cat_id,
         subcategory_id=get_subcategory.subcategory_id,
         brand_id=get_brand_id.brand_id,

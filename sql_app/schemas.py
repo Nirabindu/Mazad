@@ -4,6 +4,25 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 
+class User_registration(BaseModel):
+    user_name:str
+    email:str
+    phone:str
+    password:str
+
+
+
+
+class User_login(BaseModel):
+    phone_or_email:str
+    password:str
+    
+
+
+
+
+
+
 
 class Category(BaseModel):
     category_name: str
@@ -102,3 +121,17 @@ class get_item(Post_items):
     address: Get_address
     image_for_item: List[Images_for_item] = []
 
+
+
+
+
+
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    user: Optional[str] = None

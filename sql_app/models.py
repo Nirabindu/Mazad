@@ -1,5 +1,4 @@
-import re
-from routers.Category import post_item
+from sqlalchemy_utils import EmailType
 from sqlalchemy import (
     Column,
     String,
@@ -18,6 +17,18 @@ import datetime
 
 
 # Model for Individual User
+class Individual_user(database.Base):
+    __tablename__ = 'individual_user'
+
+    user_id = Column( String(255),primary_key = True,index=True)
+    user_name = Column(String(100),nullable = True)
+    email = Column(EmailType,unique = True)
+    phone = Column(String(10))
+    password = Column(String(255))
+    status = Column(Boolean,default = True)
+    role = Column(Boolean,default=True)
+    create_at = Column(DateTime, default=datetime.datetime.utcnow)
+
 
 
 # models for Category

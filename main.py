@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from sql_app import models, schemas, database
 from fastapi.staticfiles import StaticFiles
-from routers import Category
+from routers import Category,users
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -26,3 +26,4 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 models.database.Base.metadata.create_all(database.engine)
 
 app.include_router(Category.router)
+app.include_router(users.router)
