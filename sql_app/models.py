@@ -10,7 +10,7 @@ from sqlalchemy import (
     Float,
 )
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.expression import column, false, table
+from sqlalchemy.sql.expression import column, false, table, true
 from sqlalchemy.sql.sqltypes import DATE
 from sql_app import database
 import datetime
@@ -92,6 +92,9 @@ class Address(database.Base):
     address_get = Column(String(255), nullable=True)
     state = Column(String(50), nullable=True)
     district = Column(String(50), nullable=True)
+    city = Column(String(50),nullable=True)
+    street = Column(String(100),nullable=True)
+    building = Column(String(100),nullable=True)
     user_id = Column(String(255))
     post_item = relationship("Post_items", back_populates="address")
 
@@ -136,7 +139,6 @@ class Post_items(database.Base):
 
 class Images_for_item(database.Base):
     __tablename__ = "item_image"
-
     img_id = Column(String(255), primary_key=True, index=True)
     url = Column(String(255))
     item_id = Column(String(255), ForeignKey("items.item_id"))

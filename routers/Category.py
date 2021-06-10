@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status, File, Form, UploadFile
+from sqlalchemy.sql.functions import mode
 from sql_app import database, schemas, models
 from sqlalchemy.orm import Session
 
@@ -174,27 +175,27 @@ def model(
 # getting address
 @router.post("/getting_address/")
 def address(
-    latitude: Optional[float] = None,
-    longitude: Optional[float] = None,
-    state: Optional[str] = None,
-    district: Optional[str] = None,
+    request:schemas.Address,
     current_user: schemas.User_login = Depends(oauth2.get_current_user),
     db: Session = Depends(database.get_db),
 ):
 
-    if state == None and district == None:
+    if request.latitude != 0 and request.longitude != 0:
 
         geolocator = Nominatim(user_agent="Mazad")
-        location = geolocator.reverse("{}, {}".format(latitude, longitude))
+        location = geolocator.reverse("{}, {}".format(request.latitude,request.longitude))
 
         new_address = models.Address(
             address_id=shortuuid.uuid(),
             user_id=current_user.user_id,
-            latitude=latitude,
-            longitude=longitude,
+            latitude=request.latitude,
+            longitude=request.longitude,
             address_get=location.address,
-            state=state,
-            district=district,
+            state=request.state,
+            district=request.district,
+            city=request.city,
+            street = request.street,
+            building = request.Building
         )
         db.add(new_address)
         db.commit()
@@ -206,10 +207,13 @@ def address(
         new_address = models.Address(
             address_id=shortuuid.uuid(),
             user_id=current_user.user_id,
-            latitude=latitude,
-            longitude=longitude,
-            state=state,
-            district=district,
+            latitude=request.latitude,
+            longitude=request.longitude,
+            state=request.state,
+            district=request.district,
+            city=request.city,
+            street = request.street,
+            building = request.Building
         )
         db.add(new_address)
         db.commit()
@@ -269,7 +273,7 @@ def post_item(
     )
 
     get_address_id = (
-        db.query(models.Address).filter(models.Address.user_id == user_id).first()
+        db.query(models.Address).filter(models.Address.user_id == current_user.user_id).first()
     )
 
     adding_item = models.Post_items(
@@ -291,7 +295,7 @@ def post_item(
         description=description,
         set_product_weight=set_product_weight,
         set_price=set_price,
-        user_id = user_id,
+        user_id = current_user.user_id,
         cat_id=get_category_name.cat_id,
         subcategory_id=get_subcategory.subcategory_id,
         brand_id=get_brand_id.brand_id,
@@ -303,9 +307,9 @@ def post_item(
     db.refresh(adding_item)
 
     item = (
-        db.query(models.Post_items)
-        .filter(models.Post_items.brand_name == brand_name)
+        db.query(models.Post_items).filter(models.Post_items.item_id == adding_item.item_id)  #problems
         .first()
+    
     )
 
     # taking images
@@ -323,7 +327,7 @@ def post_item(
         db.commit()
         db.refresh(new_item_img)
 
-        return {"Item Post"}
+    return {"Item Post"}
 
 
 # GETTING ALL APIS GET
@@ -336,7 +340,13 @@ def get_items(db: Session = Depends(database.get_db)):
 
     return get_items
 
+# getting all post item post by user
+@router.get('/my_post_items/',response_model=List[schemas.get_item])
+def get_my_items(db:Session = Depends(database.get_db),current_user: schemas.User_login = Depends(oauth2.get_current_user)):
+    get_won_items = db.query(models.Post_items).filter(models.Post_items.user_id == current_user.user_id).all()
+    return get_won_items   
 
+#get all categories
 @router.get("/get_categories/", response_model=List[schemas.Get_category])
 def get_categories(db: Session = Depends(database.get_db)):
 
@@ -344,25 +354,31 @@ def get_categories(db: Session = Depends(database.get_db)):
 
     return get_cat
 
+#getting all subCategories under particular categories
+@router.get("/get_subcategories/{category_name}/", response_model=List[schemas.Get_SubCategory]) 
+def get_subcategories(category_name:str,db: Session = Depends(database.get_db)):
 
-@router.get("/get_subcategories/", response_model=List[schemas.Get_SubCategory])
-def get_subcategories(db: Session = Depends(database.get_db)):
+    get_cat_id = db.query(models.Category).filter(models.Category.category_name == category_name).first()
 
-    get_subcat = db.query(models.SubCategory).all()
+    get_subcat = db.query(models.SubCategory).filter(get_cat_id.cat_id == models.SubCategory.cat_id).all()
 
     return get_subcat
 
+#getting brand under subcategories
+@router.get("/get_brand/{subcategory_name}", response_model=List[schemas.Get_brand])
+def get_brands(subcategory_name:str,db: Session = Depends(database.get_db)):
 
-@router.get("/get_brand/", response_model=List[schemas.Get_brand])
-def get_brands(db: Session = Depends(database.get_db)):
-
-    get_brd = db.query(models.Brand).all()
+    get_subcategory_id = db.query(models.SubCategory).filter(models.SubCategory.subcategory_name == subcategory_name).first()
+    get_brd = db.query(models.Brand).filter(get_subcategory_id.subcategory_id == models.Brand.subcategory_id).all()
 
     return get_brd
 
+# getting all models under Brand
+@router.get("/get_models/{brand_name}", response_model=List[schemas.Get_models])
+def get_models(brand_name:str,db: Session = Depends(database.get_db)):
 
-@router.get("/get_models/", response_model=List[schemas.Get_models])
-def get_models(db: Session = Depends(database.get_db)):
+    get_brand_id = db.query(models.Brand).filter(models.Brand.brand_name == brand_name).first()
 
-    get_mod = db.query(models.Models).all()
-    return get_mod
+    get_models = db.query(models.Models).filter(models.Models.brand_id == get_brand_id.brand_id).all()
+
+    return get_models

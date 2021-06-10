@@ -95,19 +95,27 @@ class Post_items(BaseModel):
 
 
 class Address(BaseModel):
-    latitude: float
-    longitude: float
-    state: str
-    district: str
+    latitude: Optional[float]=None
+    longitude: Optional[float]=None
+    state: Optional[str]=None
+    district: Optional[str]=None
+    city:Optional[str]=None
+    street:Optional[str]=None
+    Building:Optional[str]=None
+    class Config:
+        orm_mode = True
 
 
 class Get_address(BaseModel):
-    state: Optional[str]
-    district: Optional[str]
-    address_get: Optional[str]
-
+    state: Optional[str]=None
+    district: Optional[str]=None
+    city:Optional[str]=None
+    street:Optional[str]=None
+    Building:Optional[str]=None
+    address_get:Optional[str]=None
     class Config:
         orm_mode = True
+
 
 
 class Images_for_item(BaseModel):
