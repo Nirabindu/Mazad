@@ -10,7 +10,7 @@ from sqlalchemy import (
     Float,
 )
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.expression import column, false, table, true
+from sqlalchemy.sql.expression import column, false, null, table, true
 from sqlalchemy.sql.sqltypes import DATE
 from sql_app import database
 import datetime
@@ -18,17 +18,20 @@ import datetime
 
 # Model for Individual User
 class Individual_user(database.Base):
-    __tablename__ = 'individual_user'
+    __tablename__ = "individual_user"
 
-    user_id = Column( String(255),primary_key = True,index=True)
-    user_name = Column(String(100),nullable = True)
-    email = Column(EmailType,unique = True)
-    phone = Column(String(10))
+    user_id = Column(String(255), primary_key=True, index=True)
+    user_name = Column(String(100), nullable=True)
+    email = Column(EmailType, unique=True)
+    phone = Column(String(10), unique=True)
     password = Column(String(255))
-    status = Column(Boolean,default = True)
-    role = Column(Boolean,default=True)
+    status = Column(Boolean, default=True)
+    role = Column(Boolean, default=True)
     create_at = Column(DateTime, default=datetime.datetime.utcnow)
 
+    post_item = relationship("Post_items", back_populates="individual_user")
+    address = relationship("Address", back_populates="individual_user")
+    story = relationship("Story", back_populates="individual_user")
 
 
 # models for Category
@@ -92,10 +95,12 @@ class Address(database.Base):
     address_get = Column(String(255), nullable=True)
     state = Column(String(50), nullable=True)
     district = Column(String(50), nullable=True)
-    city = Column(String(50),nullable=True)
-    street = Column(String(100),nullable=True)
-    building = Column(String(100),nullable=True)
-    user_id = Column(String(255))
+    city = Column(String(50), nullable=True)
+    street = Column(String(100), nullable=True)
+    building = Column(String(100), nullable=True)
+    user_id = Column(String(255), ForeignKey("individual_user.user_id"))
+
+    individual_user = relationship("Individual_user", back_populates="address")
     post_item = relationship("Post_items", back_populates="address")
 
 
@@ -122,19 +127,21 @@ class Post_items(database.Base):
     set_product_weight = Column(String(50), nullable=False)
     set_price = Column(Float, nullable=False)
     date = Column(DateTime, default=datetime.datetime.utcnow)
-    user_id = Column(String(255))
+    user_id = Column(String(255), ForeignKey("individual_user.user_id"))
     cat_id = Column(String(255), ForeignKey("category.cat_id"))
     subcategory_id = Column(String(255), ForeignKey("subcategory.subcategory_id"))
     brand_id = Column(String(255), ForeignKey("brand.brand_id"))
     model_id = Column(String(255), ForeignKey("models.model_id"))
     address_id = Column(String(255), ForeignKey("address.address_id"))
 
+    individual_user = relationship("Individual_user", back_populates="post_item")
     category = relationship("Category", back_populates="post_item")
     subcategory = relationship("SubCategory", back_populates="post_item")
     address = relationship("Address", back_populates="post_item")
     model = relationship("Models", back_populates="post_item")
     brand = relationship("Brand", back_populates="post_item")
     image_for_item = relationship("Images_for_item", back_populates="post_item")
+    story = relationship("Story", back_populates="post_item")
 
 
 class Images_for_item(database.Base):
@@ -143,3 +150,93 @@ class Images_for_item(database.Base):
     url = Column(String(255))
     item_id = Column(String(255), ForeignKey("items.item_id"))
     post_item = relationship("Post_items", back_populates="image_for_item")
+
+
+class Story(database.Base):
+    __tablename__ = "story"
+    story_id = Column(String(255), primary_key=True, index=True)
+    url = Column(String(255))
+    item_id = Column(String(255), ForeignKey("items.item_id"))
+    user_id = Column(String(255), ForeignKey("individual_user.user_id"))
+
+    post_item = relationship("Post_items", back_populates="story")
+    individual_user = relationship("Individual_user", back_populates="story")
+
+
+# for business registration
+
+
+class Business_owner(database.Base):
+    __tablename__ = "business_owner"
+
+    business_owner_id = Column(String(255), primary_key=True, index=True)
+    user_name = Column(String(100))
+    phone = Column(String(100), unique=True)
+    email = Column(EmailType, unique=True)
+    password = Column(String(255))
+    status = Column(Boolean, default=True)
+    role = Column(Boolean, default=False)
+    create_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    bs_location = relationship("Business_location", back_populates="bs_owner")
+    mr_certificate = relationship("Maroof_certificate", back_populates="bs_owner")
+    cr = relationship("Commercial_certificate", back_populates="bs_owner")
+    vt = relationship("Vat", back_populates="bs_owner")
+
+
+class Business_location(database.Base):
+    __tablename__ = "business_location"
+
+    business_details_id = Column(String(255), primary_key=True, index=True)
+    store_name = Column(String(100), unique=True)
+    store_category = Column(String(100))
+    store_sign = Column(String(255), nullable=True)
+    state = Column(String(100))
+    district = Column(String(100))
+    city = Column(String(100))
+    street = Column(String(100), nullable=True)
+    building = Column(String(100), nullable=True)
+    business_owner_id = Column(
+        String(255), ForeignKey("business_owner.business_owner_id")
+    )
+    bs_owner = relationship("Business_owner", back_populates="bs_location")
+
+
+class Maroof_certificate(database.Base):
+    __tablename__ = "maroof"
+
+    certificate_id = Column(String(255), primary_key=True, index=True)
+    maroof_id = Column(String(100))
+    maroof_expire_date = Column(String(100))
+    image = Column(String(255))
+    business_owner_id = Column(
+        String(255), ForeignKey("business_owner.business_owner_id")
+    )
+
+    bs_owner = relationship("Business_owner", back_populates="mr_certificate")
+
+
+class Commercial_certificate(database.Base):
+    __tablename__ = "commercial_certificate"
+
+    certificate_id = Column(String(255), primary_key=True, index=True)
+    commercial_id = Column(String(100), unique=true)
+    commercial_expire_date = Column(String(100))
+    image = Column(String(255))
+    business_owner_id = Column(
+        String(255), ForeignKey("business_owner.business_owner_id")
+    )
+
+    bs_owner = relationship("Business_owner", back_populates="cr")
+
+
+class Vat(database.Base):
+    __tablename__ = "vat"
+    vat_id = Column(String(100), primary_key=True, index=True)
+    vat_number = Column(String(100), unique=True, nullable=True)
+    image = Column(String(100))
+    business_owner_id = Column(
+        String(255), ForeignKey("business_owner.business_owner_id")
+    )
+
+    bs_owner = relationship("Business_owner", back_populates="vt")

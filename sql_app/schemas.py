@@ -16,6 +16,7 @@ class User_registration(BaseModel):
 class User_login(BaseModel):
     phone_or_email:str
     password:str
+
     
 
 
@@ -105,7 +106,6 @@ class Address(BaseModel):
     class Config:
         orm_mode = True
 
-
 class Get_address(BaseModel):
     state: Optional[str]=None
     district: Optional[str]=None
@@ -128,6 +128,42 @@ class Images_for_item(BaseModel):
 class get_item(Post_items):
     address: Get_address
     image_for_item: List[Images_for_item] = []
+
+
+class Upload_story(BaseModel):
+    url : str
+    class Config():
+        orm_mode = True
+
+
+class Get_story(BaseModel):
+    url:str
+    post_item:Post_items
+    
+
+
+
+
+
+
+# for b2c
+class Business_registration(BaseModel):
+    user_name :str
+    phone:str
+    email:str
+    password:str
+
+class Business_login(BaseModel):
+    phone_or_email:str
+    password:str
+
+
+# class Business_location()
+
+
+
+
+
 
 
 

@@ -133,3 +133,8 @@ def login_user(request:oauth2.OAuth2PasswordRequestForm = Depends(), db: Session
                 )
         access_token = tokens.create_access_token(data={"sub": checking_email.email })
         return {"access_token": access_token, "token_type": "bearer"}
+
+
+
+
+#Edit profile
