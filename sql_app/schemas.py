@@ -1,4 +1,5 @@
 from sql_app.database import Base
+from sql_app import models
 from sqlalchemy import orm
 from pydantic import BaseModel
 from typing import Optional, List
@@ -18,8 +19,16 @@ class User_login(BaseModel):
     password:str
 
     
+class User_update(BaseModel):
+    user_name:str
+    email:str
+    phone:str
 
 
+class Chang_password(BaseModel):
+    current_password:str
+    new_password:str
+    confirm_password:str
 
 
 
