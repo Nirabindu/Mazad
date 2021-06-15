@@ -381,3 +381,10 @@ def get_models(brand_name:str,db: Session = Depends(database.get_db)):
     get_models = db.query(models.Models).filter(models.Models.brand_id == get_brand_id.brand_id).all()
 
     return get_models
+
+#search apis
+
+# @router.post('/search/{search_string}')
+# def search(search_string:str,db: Session = Depends(database.get_db)):
+#     get = db.query(models.Post_items).ilike("search_string%").all()
+#     print(get)

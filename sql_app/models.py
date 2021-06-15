@@ -33,6 +33,14 @@ class Individual_user(database.Base):
     address = relationship("Address", back_populates="individual_user")
     story = relationship("Story", back_populates="individual_user")
 
+#models for otp
+
+class Otp(database.Base):
+    __tablename__ = 'otp'
+    id = Column(Integer,primary_key=True,index = True)
+    otp = Column(Integer)
+    create_at = Column(DateTime,default=datetime.datetime.utcnow())
+
 
 # models for Category
 class Category(database.Base):

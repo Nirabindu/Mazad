@@ -1,4 +1,5 @@
 import random
+import datetime
 import re
 from fastapi import APIRouter, HTTPException, Depends, status, File, UploadFile
 from fastapi.routing import get_request_handler
@@ -13,6 +14,7 @@ from typing import List
 from email_validator import validate_email, EmailNotValidError
 import twilio
 from twilio.rest import Client
+
 
 
 router = APIRouter(tags=["users-individuals"])
@@ -73,24 +75,64 @@ async def user_registration(
 
 
 # sending otp
-@router.post("/send_otp/")
-def send_otp():
+@router.post('/send_otp/{phone_number}')
+def sending_otp(phone_number:str,db: Session = Depends(database.get_db)):
     otp = random.randint(1000, 9999)
     account_sid = "AC259347c6a5446e1abc14f27ad008b2d4"
     auth_token = "a30400efd112616f828e4e8b025b5a9a"
     client = Client(account_sid, auth_token)
-
+    phone_number = "+91"+phone_number
     message = client.messages.create(
         body="Your Mazad.com verification code is:" + str(otp),
         from_="+14159031648",
-        to="+917557823759",
-    )
+        to=phone_number,
+        )
+    save_otp = models.Otp(
+        otp = otp,
+    )    
+    db.add(save_otp)
+    db.commit()
+    db.refresh(save_otp)
+    return{'otp send'}
 
-    # print(message.sid)
-    return {"otp send to your mobile"}
+
+@router.post('/verify_otp/{enter_otp}')
+def otp_verify(enter_otp:int,db: Session = Depends(database.get_db)):
+    getting_otp = db.query(models.Otp).filter(enter_otp == models.Otp.otp).first()
+
+    if getting_otp:
+        db.delete(getting_otp)
+        db.commit()
+        return{'otp verified'}
+    else:
+        return{'otp expire'}
+    
+    
 
 
-# login apis
+
+
+
+
+# # sending otp
+# @router.post("/send_otp/")
+# def send_otp():
+#     otp = random.randint(1000, 9999)
+#     account_sid = "AC259347c6a5446e1abc14f27ad008b2d4"
+#     auth_token = "a30400efd112616f828e4e8b025b5a9a"
+#     client = Client(account_sid, auth_token)
+
+#     message = client.messages.create(
+#         body="Your Mazad.com verification code is:" + str(otp),
+#         from_="+14159031648",
+#         to="+917557823759",
+#     )
+
+#     # print(message.sid)
+#     return {"otp send to your mobile"}
+
+
+#login apis
 @router.post("/login/")
 def login_user(
     request: oauth2.OAuth2PasswordRequestForm = Depends(),
@@ -167,16 +209,6 @@ async def get_user(
     get_user = db.query(models.Individual_user).all()
     return get_user
 
-
-# @router.get("/get_user_by_id/{user_id}")
-# async def get_user_by_id(
-#     user_id: str,
-#     db: Session = Depends(database.get_db),
-#     current_user: schemas.User_login = Depends(oauth2.get_current_user)
-# ):
-
-#     user_by_id = db.query(models.Individual_user).filter(user_id == models.Individual_user.user_id).first()
-#     return user_by_id
 
 
 # Edit  user frofile profile
