@@ -106,30 +106,11 @@ def otp_verify(enter_otp:int,db: Session = Depends(database.get_db)):
         return{'otp verified'}
     else:
         return{'otp expire'}
-    
-    
 
 
 
 
 
-
-# # sending otp
-# @router.post("/send_otp/")
-# def send_otp():
-#     otp = random.randint(1000, 9999)
-#     account_sid = "AC259347c6a5446e1abc14f27ad008b2d4"
-#     auth_token = "a30400efd112616f828e4e8b025b5a9a"
-#     client = Client(account_sid, auth_token)
-
-#     message = client.messages.create(
-#         body="Your Mazad.com verification code is:" + str(otp),
-#         from_="+14159031648",
-#         to="+917557823759",
-#     )
-
-#     # print(message.sid)
-#     return {"otp send to your mobile"}
 
 
 #login apis

@@ -75,7 +75,7 @@ class Brand(database.Base):
     __tablename__ = "brand"
 
     brand_id = Column(String(255), primary_key=True, index=True)
-    brand_name = Column(String(255), unique=True)
+    brand_name = Column(String(255))
     subcategory_id = Column(String(255), ForeignKey("subcategory.subcategory_id"))
     subcategory = relationship("SubCategory", back_populates="brand")
     model = relationship("Models", back_populates="brand")

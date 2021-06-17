@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status, File, Form, UploadFile
+from sqlalchemy.sql.coercions import LimitOffsetImpl
 from sql_app import database, schemas, models
 from sqlalchemy.orm import Session
 
@@ -51,7 +52,7 @@ def add_category(
         return {"Category Added"}
 
 
-# adding subcategory to category
+# adding subcategory
 
 
 @router.post("/add_subcategory/{category_name}")
@@ -105,11 +106,18 @@ def brand(
     db: Session = Depends(database.get_db),
 ):
 
-    # checking brand name already in database or not
-
+    sub_cat_id = (
+        db.query(models.SubCategory)
+        .filter(models.SubCategory.subcategory_name == subcategory_name)
+        .first()
+    )
+   
+   
+   # checking brand name already in database or not
     checking_brand_name = (
         db.query(models.Brand)
         .filter(request_body.brand_name == models.Brand.brand_name)
+        .filter(sub_cat_id.subcategory_id == models.Brand.subcategory_id)
         .first()
     )
 
@@ -174,7 +182,7 @@ def model(
 # getting address
 @router.post("/getting_address/")
 def address(
-    request:schemas.Address,
+    request: schemas.Address,
     current_user: schemas.User_login = Depends(oauth2.get_current_user),
     db: Session = Depends(database.get_db),
 ):
@@ -182,7 +190,9 @@ def address(
     if request.latitude != 0 and request.longitude != 0:
 
         geolocator = Nominatim(user_agent="Mazad")
-        location = geolocator.reverse("{}, {}".format(request.latitude,request.longitude))
+        location = geolocator.reverse(
+            "{}, {}".format(request.latitude, request.longitude)
+        )
 
         new_address = models.Address(
             address_id=shortuuid.uuid(),
@@ -193,8 +203,8 @@ def address(
             state=request.state,
             district=request.district,
             city=request.city,
-            street = request.street,
-            building = request.Building
+            street=request.street,
+            building=request.Building,
         )
         db.add(new_address)
         db.commit()
@@ -211,8 +221,8 @@ def address(
             state=request.state,
             district=request.district,
             city=request.city,
-            street = request.street,
-            building = request.Building
+            street=request.street,
+            building=request.Building,
         )
         db.add(new_address)
         db.commit()
@@ -244,11 +254,8 @@ def post_item(
     set_price: float = Form(...),
     file: List[UploadFile] = File(...),
     db: Session = Depends(database.get_db),
-    current_user: schemas.User_login = Depends(oauth2.get_current_user)
+    current_user: schemas.User_login = Depends(oauth2.get_current_user),
 ):
-
-
-
 
     get_subcategory = (
         db.query(models.SubCategory)
@@ -258,7 +265,7 @@ def post_item(
 
     get_category_name = (
         db.query(models.Category)
-        .filter(models.Category.cat_id == models.SubCategory.cat_id)
+        .filter(models.Category.cat_id == get_subcategory.cat_id)
         .first()
     )
 
@@ -266,13 +273,14 @@ def post_item(
         db.query(models.Brand).filter(models.Brand.brand_name == brand_name).first()
     )
 
-
     get_models_id = (
         db.query(models.Models).filter(models.Models.model_name == model_name).first()
     )
 
     get_address_id = (
-        db.query(models.Address).filter(models.Address.user_id == current_user.user_id).first()
+        db.query(models.Address)
+        .filter(models.Address.user_id == current_user.user_id)
+        .first()
     )
 
     adding_item = models.Post_items(
@@ -294,7 +302,7 @@ def post_item(
         description=description,
         set_product_weight=set_product_weight,
         set_price=set_price,
-        user_id = current_user.user_id,
+        user_id=current_user.user_id,
         cat_id=get_category_name.cat_id,
         subcategory_id=get_subcategory.subcategory_id,
         brand_id=get_brand_id.brand_id,
@@ -306,9 +314,9 @@ def post_item(
     db.refresh(adding_item)
 
     item = (
-        db.query(models.Post_items).filter(models.Post_items.item_id == adding_item.item_id)  #problems
+        db.query(models.Post_items)
+        .filter(models.Post_items.item_id == adding_item.item_id)  # problems
         .first()
-    
     )
 
     # taking images
@@ -332,20 +340,29 @@ def post_item(
 # GETTING ALL APIS GET
 
 
-@router.get("/get_post_items/", response_model=List[schemas.get_item])
+@router.get("/get_post_items/", response_model=List[schemas.Get_item])
 def get_items(db: Session = Depends(database.get_db)):
 
     get_items = db.query(models.Post_items).all()
 
     return get_items
 
-# getting all post item post by user
-@router.get('/my_post_items/',response_model=List[schemas.get_item])
-def get_my_items(db:Session = Depends(database.get_db),current_user: schemas.User_login = Depends(oauth2.get_current_user)):
-    get_won_items = db.query(models.Post_items).filter(models.Post_items.user_id == current_user.user_id).all()
-    return get_won_items   
 
-#get all categories
+# getting all post item post by user
+@router.get("/my_post_items/", response_model=List[schemas.Get_item])
+def get_my_items(
+    db: Session = Depends(database.get_db),
+    current_user: schemas.User_login = Depends(oauth2.get_current_user),
+):
+    get_won_items = (
+        db.query(models.Post_items)
+        .filter(models.Post_items.user_id == current_user.user_id)
+        .all()
+    )
+    return get_won_items
+
+
+# get all categories
 @router.get("/get_categories/", response_model=List[schemas.Get_category])
 def get_categories(db: Session = Depends(database.get_db)):
 
@@ -353,38 +370,92 @@ def get_categories(db: Session = Depends(database.get_db)):
 
     return get_cat
 
-#getting all subCategories under particular categories
-@router.get("/get_subcategories/{category_name}/", response_model=List[schemas.Get_SubCategory]) 
-def get_subcategories(category_name:str,db: Session = Depends(database.get_db)):
 
-    get_cat_id = db.query(models.Category).filter(models.Category.category_name == category_name).first()
+# getting all subCategories under particular categories
+@router.get(
+    "/get_subcategories/{category_name}/", response_model=List[schemas.Get_SubCategory]
+)
+def get_subcategories(category_name: str, db: Session = Depends(database.get_db)):
 
-    get_subcat = db.query(models.SubCategory).filter(get_cat_id.cat_id == models.SubCategory.cat_id).all()
+    get_cat_id = (
+        db.query(models.Category)
+        .filter(models.Category.category_name == category_name)
+        .first()
+    )
+
+    get_subcat = (
+        db.query(models.SubCategory)
+        .filter(get_cat_id.cat_id == models.SubCategory.cat_id)
+        .all()
+    )
 
     return get_subcat
 
-#getting brand under subcategories
-@router.get("/get_brand/{subcategory_name}", response_model=List[schemas.Get_brand])
-def get_brands(subcategory_name:str,db: Session = Depends(database.get_db)):
 
-    get_subcategory_id = db.query(models.SubCategory).filter(models.SubCategory.subcategory_name == subcategory_name).first()
-    get_brd = db.query(models.Brand).filter(get_subcategory_id.subcategory_id == models.Brand.subcategory_id).all()
+# getting brand under subcategories
+@router.get("/get_brand/{subcategory_name}", response_model=List[schemas.Get_brand])
+def get_brands(subcategory_name: str, db: Session = Depends(database.get_db)):
+
+    get_subcategory_id = (
+        db.query(models.SubCategory)
+        .filter(models.SubCategory.subcategory_name == subcategory_name)
+        .first()
+    )
+    get_brd = (
+        db.query(models.Brand)
+        .filter(get_subcategory_id.subcategory_id == models.Brand.subcategory_id)
+        .all()
+    )
 
     return get_brd
 
+
 # getting all models under Brand
 @router.get("/get_models/{brand_name}", response_model=List[schemas.Get_models])
-def get_models(brand_name:str,db: Session = Depends(database.get_db)):
+def get_models(brand_name: str, db: Session = Depends(database.get_db)):
 
-    get_brand_id = db.query(models.Brand).filter(models.Brand.brand_name == brand_name).first()
+    get_brand_id = (
+        db.query(models.Brand).filter(models.Brand.brand_name == brand_name).first()
+    )
 
-    get_models = db.query(models.Models).filter(models.Models.brand_id == get_brand_id.brand_id).all()
+    get_models = (
+        db.query(models.Models)
+        .filter(models.Models.brand_id == get_brand_id.brand_id)
+        .all()
+    )
 
     return get_models
 
-#search apis
 
-# @router.post('/search/{search_string}')
-# def search(search_string:str,db: Session = Depends(database.get_db)):
-#     get = db.query(models.Post_items).ilike("search_string%").all()
-#     print(get)
+# search apis
+
+
+@router.post("/search/{search_string}", response_model=List[schemas.Get_item])
+def search(search_string: str, db: Session = Depends(database.get_db)):
+
+    item = (
+        db.query(models.Post_items)
+        .filter(models.Post_items.model_name.ilike(f"%{search_string}%"))
+        .all()
+    )
+    if item:
+        return item
+    sub_category = (
+        db.query(models.Post_items)
+        .filter(models.SubCategory.subcategory_name.ilike(f"%{search_string}%"))
+        .filter(models.SubCategory.subcategory_id == models.Post_items.subcategory_id)
+        .all()
+    )
+    if sub_category:
+        return sub_category
+
+    model = (
+        db.query(models.Post_items)
+        .filter(models.Models.model_name.ilike(f"%{search_string}%"))
+        .filter(models.Models.model_id == models.Post_items.model_id)
+        .all()
+    )
+    if model:
+        return model
+    else:
+        return {"Search item not found"}

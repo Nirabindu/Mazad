@@ -134,9 +134,11 @@ class Images_for_item(BaseModel):
         orm_mode = True
 
 
-class get_item(Post_items):
+class Get_item(Post_items):
     address: Get_address
     image_for_item: List[Images_for_item] = []
+    class Config:
+        orm_mode = True
 
 
 class Upload_story(BaseModel):
@@ -150,6 +152,9 @@ class Get_story(BaseModel):
     post_item:Post_items
     
 
+class Search(Get_item):
+    pass
+    
 
 
 
