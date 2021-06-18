@@ -10,6 +10,7 @@ class User_registration(BaseModel):
     email:str
     phone:str
     password:str
+    confirm_password:str
 
 
 

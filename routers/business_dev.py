@@ -1,7 +1,5 @@
 import random
 from fastapi import APIRouter, HTTPException, Depends, status, File, Form, UploadFile
-from sqlalchemy.sql.functions import mode
-from sqlalchemy.sql.selectable import FromClause
 from sql_app import schemas, database, models
 from sqlalchemy.orm import Session
 import shortuuid

@@ -10,7 +10,6 @@ from sqlalchemy import (
     Float,
 )
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.expression import column, false, null, table, true
 from sqlalchemy.sql.sqltypes import DATE
 from sql_app import database
 import datetime
@@ -228,7 +227,7 @@ class Commercial_certificate(database.Base):
     __tablename__ = "commercial_certificate"
 
     certificate_id = Column(String(255), primary_key=True, index=True)
-    commercial_id = Column(String(100), unique=true)
+    commercial_id = Column(String(100), unique=True)
     commercial_expire_date = Column(String(100))
     image = Column(String(255))
     business_owner_id = Column(

@@ -1,11 +1,6 @@
 import random
 import datetime
-import re
 from fastapi import APIRouter, HTTPException, Depends, status, File, UploadFile
-from fastapi.routing import get_request_handler
-from sqlalchemy.sql.expression import true
-from sqlalchemy.sql.functions import mode
-from starlette.status import HTTP_404_NOT_FOUND
 from sql_app import schemas, database, models
 from sqlalchemy.orm import Session
 import shortuuid
@@ -14,7 +9,6 @@ from typing import List
 from email_validator import validate_email, EmailNotValidError
 import twilio
 from twilio.rest import Client
-
 
 
 router = APIRouter(tags=["users-individuals"])
@@ -59,6 +53,11 @@ async def user_registration(
 
     if len(request.password) < 6:
         return {"password must be in 6 charecter"}
+
+    if request.password != request.confirm_password:
+        return{'password not matched as above'}
+
+
 
     adding_user = models.Individual_user(
         user_id=shortuuid.uuid(),
