@@ -34,6 +34,9 @@ async def business_registration(
     if len(request.password) < 6:
         return {"password must be in 6 charecter"}
 
+    if request.password != request.confirm_password:
+        return{'password not matched as above'}    
+
     check_email = (
         db.query(models.Business_owner)
         .filter(request.email == models.Business_owner.email)

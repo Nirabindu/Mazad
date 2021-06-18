@@ -167,6 +167,7 @@ class Business_registration(BaseModel):
     phone:str
     email:str
     password:str
+    confirm_password:str
 
 class Business_login(BaseModel):
     phone_or_email:str
