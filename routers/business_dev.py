@@ -63,7 +63,7 @@ async def user_registration(
         phone=request.phone,
         email=request.email,
         password=hashing.bcrypt(request.password),
-        role = "business"
+        role="business",
     )
     db.add(adding_user)
     db.commit()
@@ -72,15 +72,7 @@ async def user_registration(
     return {"registration success please login"}
 
 
-
-
-
-
-
-
-
-
-# # user registration for individual
+# # user registration for business
 # @router.post("/Business_registration/")
 # async def business_registration(
 #     request: schemas.Business_registration, db: Session = Depends(database.get_db)
@@ -209,32 +201,46 @@ def business_details(
     current_user: schemas.User_login = Depends(oauth2.get_current_user),
 ):
 
-    checking_bs_owner = db.query(models.Business_location).filter(models.Business_location.business_owner_id == models.Individual_user.user_id).first()
-
-    if checking_bs_owner:
-        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,detail=f'user already added')
-        
-
-
-
     getting_bs_owner_by_mobile = (
         db.query(models.Individual_user)
         .filter(models.Individual_user.phone == current_user)
         .first()
     )
-    
+
     getting_bs_owner_by_email = (
         db.query(models.Individual_user)
         .filter(models.Individual_user.email == current_user)
         .first()
     )
 
+    # checking_bs_owner_by_mobile = (
+    #     db.query(models.Business_location)
+    #     .filter(
+    #         models.Business_location.business_owner_id
+    #         == getting_bs_owner_by_mobile.user_id
+    #     )
+    #     .first()
+    # )
 
+    # checking_bs_owner_by_email = (
+    #     db.query(models.Business_location)
+    #     .filter(
+    #         models.Business_location.business_owner_id
+    #         == getting_bs_owner_by_email.user_id
+    #     )
+    #     .first()
+    # )
 
-    if (
-        getting_bs_owner_by_mobile
-        and getting_bs_owner_by_mobile.role == "business"
-    ):
+    # if checking_bs_owner_by_mobile:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_406_NOT_ACCEPTABLE, detail=f"user already added"
+    #     )
+    # elif checking_bs_owner_by_email:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_406_NOT_ACCEPTABLE, detail=f"user already added"
+        # )
+
+    if getting_bs_owner_by_mobile and getting_bs_owner_by_mobile.role == "business":
 
         file.filename = f"{shortuuid.uuid()}.jpg"
         with open("static/images/store_sign/" + file.filename, "wb") as img:
@@ -251,16 +257,13 @@ def business_details(
             street=street,
             building=building,
             store_sign=url,
-            business_owner_id=getting_bs_owner_by_mobile.user_id,
+            business_owner_id=getting_bs_owner_by_mobile.user_id
         )
         db.add(new_location)
         db.commit()
         db.refresh(new_location)
         return {"location added"}
-    elif (
-        getting_bs_owner_by_email
-        and getting_bs_owner_by_email.role == "business"
-    ):
+    elif getting_bs_owner_by_email and getting_bs_owner_by_email.role == "business":
         file.filename = f"{shortuuid.uuid()}.jpg"
         with open("static/images/store_sign/" + file.filename, "wb") as img:
             shutil.copyfileobj(file.file, img)
@@ -276,18 +279,17 @@ def business_details(
             street=street,
             building=building,
             store_sign=url,
-            business_owner_id=getting_bs_owner_by_mobile.user_id,
+            business_owner_id=getting_bs_owner_by_email.user_id,
         )
         db.add(new_location)
         db.commit()
         db.refresh(new_location)
         return {"location added"}
     else:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail=f'you do not have the right to access this url')
-
-
-
-
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"you do not have the right to access this url",
+        )
 
 
 @router.post("/uploading_maroof_details/")
@@ -297,6 +299,7 @@ def maroof(
     maroof_expire_date: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(database.get_db),
+    current_user: schemas.User_login = Depends(oauth2.get_current_user),
 ):
 
     file.filename = f"{shortuuid.uuid()}.jpg"
