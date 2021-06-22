@@ -1,7 +1,6 @@
 import random
-import datetime
 from fastapi import APIRouter, HTTPException, Depends, status, File, UploadFile
-from sql_app import schemas, database, models
+from sql_app import schemas, models, database
 from sqlalchemy.orm import Session
 import shortuuid
 from security import hashing, tokens, oauth2
@@ -55,9 +54,7 @@ async def user_registration(
         return {"password must be in 6 charecter"}
 
     if request.password != request.confirm_password:
-        return{'password not matched as above'}
-
-
+        return {"password not matched as above"}
 
     adding_user = models.Individual_user(
         user_id=shortuuid.uuid(),
@@ -65,6 +62,7 @@ async def user_registration(
         phone=request.phone,
         email=request.email,
         password=hashing.bcrypt(request.password),
+        role = "individual"
     )
     db.add(adding_user)
     db.commit()
@@ -74,50 +72,49 @@ async def user_registration(
 
 
 # sending otp
-@router.post('/send_otp/{phone_number}')
-def sending_otp(phone_number:str,db: Session = Depends(database.get_db)):
+@router.post("/send_otp/{phone_number}")
+def sending_otp(phone_number: str, db: Session = Depends(database.get_db)):
     otp = random.randint(1000, 9999)
     account_sid = "AC259347c6a5446e1abc14f27ad008b2d4"
     auth_token = "a30400efd112616f828e4e8b025b5a9a"
     client = Client(account_sid, auth_token)
-    phone_number = "+91"+phone_number
+    phone_number = "+91" + phone_number
     message = client.messages.create(
         body="Your Mazad.com verification code is:" + str(otp),
         from_="+14159031648",
         to=phone_number,
-        )
+    )
     save_otp = models.Otp(
-        otp = otp,
-    )    
+        otp=otp,
+    )
     db.add(save_otp)
     db.commit()
     db.refresh(save_otp)
-    return{'otp send'}
+    return {"otp send"}
 
 
-@router.post('/verify_otp/{enter_otp}')
-def otp_verify(enter_otp:int,db: Session = Depends(database.get_db)):
+@router.post("/verify_otp/{enter_otp}")
+def otp_verify(enter_otp: int, db: Session = Depends(database.get_db)):
     getting_otp = db.query(models.Otp).filter(enter_otp == models.Otp.otp).first()
 
     if getting_otp:
         db.delete(getting_otp)
         db.commit()
-        return{'otp verified'}
+        return {"otp verified"}
     else:
-        return{'otp expire'}
+        return {"otp expire"}
 
 
-
-
-
-
-
-#login apis
+# login apis
 @router.post("/login/")
 def login_user(
     request: oauth2.OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(database.get_db),
 ):  # request: schemas.User_login
+
+
+    inv_role = db.query(models.Individual_user).filter(models.Individual_user.role == "individual").first()
+
 
     check = True  # for mobile
 
@@ -165,7 +162,8 @@ def login_user(
         return {"access_token": access_token, "token_type": "bearer"}
 
 
-# find all user
+
+# find won data
 
 
 @router.get("/get_won_data/")
@@ -173,128 +171,151 @@ async def get_won(
     db: Session = Depends(database.get_db),
     current_user: schemas.User_login = Depends(oauth2.get_current_user),
 ):
-    my_data = (
+
+    current_user_data_by_email = (
         db.query(models.Individual_user)
-        .filter(current_user.user_id == models.Individual_user.user_id)
+        .filter(current_user == models.Individual_user.email)
         .first()
     )
-    return my_data
+    if current_user_data_by_email:
+        my_data = (
+            db.query(models.Individual_user)
+            .filter(current_user_data_by_email.user_id == models.Individual_user.user_id)
+            .first()
+        )
+        return my_data
+
+    current_user_data_by_mobile = (
+        db.query(models.Individual_user)
+        .filter(models.Individual_user.phone == current_user)
+        .first()
+    )
+
+    if current_user_data_by_mobile:
+        my_data = (
+            db.query(models.Individual_user)
+            .filter(
+                current_user_data_by_mobile.user_id == models.Individual_user.user_id
+            )
+            .first()
+        )
+        return my_data
 
 
-@router.get("/get_all_user/")
-async def get_user(
-    db: Session = Depends(database.get_db),
-    current_user: schemas.User_login = Depends(oauth2.get_current_user),
-):
-    get_user = db.query(models.Individual_user).all()
-    return get_user
-
+# # @router.get("/get_all_user/")
+# # async def get_user(
+# #     db: Session = Depends(database.get_db),
+# #     current_user: schemas.User_login = Depends(oauth2.get_current_user),
+# # ):
+# #     get_user = db.query(models.Individual_user).all()
+# #     return get_user
 
 
 # Edit  user frofile profile
-@router.put("/edit_profile/")
-async def edit_profile(
-    request: schemas.User_update,
-    db: Session = Depends(database.get_db),
-    current_user: schemas.User_login = Depends(oauth2.get_current_user),
-):
-    get_data = (
-        db.query(models.Individual_user)
-        .filter(current_user.user_id == models.Individual_user.user_id)
-        .first()
-    )
+# @router.put("/edit_profile/")
+# async def edit_profile(
+#     request: schemas.User_update,
+#     db: Session = Depends(database.get_db),
+#     current_user: schemas.User_login = Depends(oauth2.get_current_user),
+# ):
 
-    try:
-        valid = validate_email(request.email)
-        # Update with the normalized form.
-        email = valid.email
-    except EmailNotValidError as e:
-        # email is not valid, exception message is human-readable
-        return {"Not a valid email address"}
+#     get_data = (
+#         db.query(models.Individual_user)
+#         .filter(current_user.user_id == models.Individual_user.user_id)
+#         .first()
+#     )
 
-    check_email = (
-        db.query(models.Individual_user)
-        .filter(request.email == models.Individual_user.email)
-        .first()
-    )
+#     try:
+#         valid = validate_email(request.email)
+#         # Update with the normalized form.
+#         email = valid.email
+#     except EmailNotValidError as e:
+#         # email is not valid, exception message is human-readable
+#         return {"Not a valid email address"}
 
-    if check_email:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Email already register"
-        )
-    if len(request.phone) != 10:
-        return {"phone number must be 10 digit"}
+#     check_email = (
+#         db.query(models.Individual_user)
+#         .filter(request.email == models.Individual_user.email)
+#         .first()
+#     )
 
-    check_mobile = (
-        db.query(models.Individual_user)
-        .filter(request.phone == models.Individual_user.phone)
-        .first()
-    )
+#     if check_email:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND, detail=f"Email already register"
+#         )
+#     if len(request.phone) != 10:
+#         return {"phone number must be 10 digit"}
 
-    if check_mobile:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"mobile already register"
-        )
+#     check_mobile = (
+#         db.query(models.Individual_user)
+#         .filter(request.phone == models.Individual_user.phone)
+#         .first()
+#     )
 
-    get_data.user_name = request.user_name
-    get_data.email = request.email
-    get_data.phone = request.phone
+#     if check_mobile:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND, detail=f"mobile already register"
+#         )
 
-    db.commit()
-    db.refresh(get_data)
-    return {"Saved Data"}
+#     get_data.user_name = request.user_name
+#     get_data.email = request.email
+#     get_data.phone = request.phone
+
+#     db.commit()
+#     db.refresh(get_data)
+#     return {"Saved Data"}
 
 
-@router.patch("/change_password/")
-def change_password(
-    request: schemas.Chang_password,
-    db: Session = Depends(database.get_db),
-    current_user: schemas.User_login = Depends(oauth2.get_current_user),
-):
+# @router.patch("/change_password/")
+# def change_password(
+#     request: schemas.Chang_password,
+#     db: Session = Depends(database.get_db),
+#     current_user: schemas.User_login = Depends(oauth2.get_current_user),
+# ):
 
-    get_user = (
-        db.query(models.Individual_user)
-        .filter(models.Individual_user.user_id == current_user.user_id)
-        .first()
-    )
+#     get_user = (
+#         db.query(models.Individual_user)
+#         .filter(models.Individual_user.user_id == current_user.user_id)
+#         .first()
+#     )
 
-    password = request.current_password
+#     password = request.current_password
 
-    password_verify = hashing.verify_password(password, get_user.password)
-    if password_verify == True:
-        new_password = request.new_password
-        confirm_password = request.confirm_password
-        if len(new_password) < 6:
-            raise HTTPException(
-                status_code=status.HTTP_411_LENGTH_REQUIRED,
-                detail=f"password must be in 6 charecter",
-            )
+#     password_verify = hashing.verify_password(password, get_user.password)
+#     if password_verify == True:
+#         new_password = request.new_password
+#         confirm_password = request.confirm_password
+#         if len(new_password) < 6:
+#             raise HTTPException(
+#                 status_code=status.HTTP_411_LENGTH_REQUIRED,
+#                 detail=f"password must be in 6 charecter",
+#             )
 
-        check_if_new_password_same_as_old = hashing.verify_password(
-            new_password, get_user.password
-        )
-        if check_if_new_password_same_as_old == True:
-            raise HTTPException(
-                status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                detail=f"old password no acceptable as new password",
-            )
+#         check_if_new_password_same_as_old = hashing.verify_password(
+#             new_password, get_user.password
+#         )
+#         if check_if_new_password_same_as_old == True:
+#             raise HTTPException(
+#                 status_code=status.HTTP_406_NOT_ACCEPTABLE,
+#                 detail=f"old password no acceptable as new password",
+#             )
 
-        if new_password == confirm_password:
-            get_user.password = hashing.bcrypt(confirm_password)
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"password not matched as confirm password",
-            )
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"your current password not valid enter password again",
-        )
+#         if new_password == confirm_password:
+#             get_user.password = hashing.bcrypt(confirm_password)
+#         else:
+#             raise HTTPException(
+#                 status_code=status.HTTP_404_NOT_FOUND,
+#                 detail=f"password not matched as confirm password",
+#             )
+#     else:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail=f"your current password not valid enter password again",
+#         )
 
-    db.commit()
-    db.refresh(get_user)
-    raise HTTPException(
-        status_code=status.HTTP_201_CREATED,
-        detail=f"password changes please login again",
-    )
+#     db.commit()
+#     db.refresh(get_user)
+#     raise HTTPException(
+#         status_code=status.HTTP_201_CREATED,
+#         detail=f"password changes please login again",
+#     )

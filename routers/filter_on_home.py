@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status, File, Form, UploadFile
-from sql_app import database, schemas, models
+import sql_app
 from sqlalchemy.orm import Session
 from security import hashing, oauth2, tokens
 from typing import List, Optional, Dict

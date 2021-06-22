@@ -25,20 +25,28 @@ class Individual_user(database.Base):
     phone = Column(String(10), unique=True)
     password = Column(String(255))
     status = Column(Boolean, default=True)
-    role = Column(Boolean, default=True)
+    role = Column(String(20))
     create_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     post_item = relationship("Post_items", back_populates="individual_user")
     address = relationship("Address", back_populates="individual_user")
     story = relationship("Story", back_populates="individual_user")
 
-#models for otp
+
+    bs_location = relationship("Business_location", back_populates="bs_owner")
+    mr_certificate = relationship("Maroof_certificate", back_populates="bs_owner")
+    cr = relationship("Commercial_certificate", back_populates="bs_owner")
+    vt = relationship("Vat", back_populates="bs_owner")
+
+
+# models for otp
+
 
 class Otp(database.Base):
-    __tablename__ = 'otp'
-    id = Column(Integer,primary_key=True,index = True)
+    __tablename__ = "otp"
+    id = Column(Integer, primary_key=True, index=True)
     otp = Column(Integer)
-    create_at = Column(DateTime,default=datetime.datetime.utcnow())
+    create_at = Column(DateTime, default=datetime.datetime.utcnow())
 
 
 # models for Category
@@ -173,29 +181,29 @@ class Story(database.Base):
 # for business registration
 
 
-class Business_owner(database.Base):
-    __tablename__ = "business_owner"
+# class Business_owner(database.Base):
+#     __tablename__ = "business_owner"
 
-    business_owner_id = Column(String(255), primary_key=True, index=True)
-    user_name = Column(String(100))
-    phone = Column(String(100), unique=True)
-    email = Column(EmailType, unique=True)
-    password = Column(String(255))
-    status = Column(Boolean, default=True)
-    role = Column(Boolean, default=False)
-    create_at = Column(DateTime, default=datetime.datetime.utcnow)
+#     business_owner_id = Column(String(255), primary_key=True, index=True)
+#     user_name = Column(String(100))
+#     phone = Column(String(100), unique=True)
+#     email = Column(EmailType, unique=True)
+#     password = Column(String(255))
+#     status = Column(Boolean, default=True)
+#     role = Column(String(20), default="business")
+#     create_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-    bs_location = relationship("Business_location", back_populates="bs_owner")
-    mr_certificate = relationship("Maroof_certificate", back_populates="bs_owner")
-    cr = relationship("Commercial_certificate", back_populates="bs_owner")
-    vt = relationship("Vat", back_populates="bs_owner")
+#     bs_location = relationship("Business_location", back_populates="bs_owner")
+#     mr_certificate = relationship("Maroof_certificate", back_populates="bs_owner")
+#     cr = relationship("Commercial_certificate", back_populates="bs_owner")
+#     vt = relationship("Vat", back_populates="bs_owner")
 
 
 class Business_location(database.Base):
     __tablename__ = "business_location"
 
     business_details_id = Column(String(255), primary_key=True, index=True)
-    store_name = Column(String(100), unique=True)
+    store_name = Column(String(100))
     store_category = Column(String(100))
     store_sign = Column(String(255), nullable=True)
     state = Column(String(100))
@@ -204,9 +212,9 @@ class Business_location(database.Base):
     street = Column(String(100), nullable=True)
     building = Column(String(100), nullable=True)
     business_owner_id = Column(
-        String(255), ForeignKey("business_owner.business_owner_id")
+        String(255), ForeignKey("individual_user.user_id")
     )
-    bs_owner = relationship("Business_owner", back_populates="bs_location")
+    bs_owner = relationship("Individual_user", back_populates="bs_location")
 
 
 class Maroof_certificate(database.Base):
@@ -217,10 +225,10 @@ class Maroof_certificate(database.Base):
     maroof_expire_date = Column(String(100))
     image = Column(String(255))
     business_owner_id = Column(
-        String(255), ForeignKey("business_owner.business_owner_id")
+        String(255), ForeignKey("individual_user.user_id")
     )
 
-    bs_owner = relationship("Business_owner", back_populates="mr_certificate")
+    bs_owner = relationship("Individual_user", back_populates="mr_certificate")
 
 
 class Commercial_certificate(database.Base):
@@ -231,10 +239,10 @@ class Commercial_certificate(database.Base):
     commercial_expire_date = Column(String(100))
     image = Column(String(255))
     business_owner_id = Column(
-        String(255), ForeignKey("business_owner.business_owner_id")
+        String(255), ForeignKey("individual_user.user_id")
     )
 
-    bs_owner = relationship("Business_owner", back_populates="cr")
+    bs_owner = relationship("Individual_user", back_populates="cr")
 
 
 class Vat(database.Base):
@@ -243,7 +251,7 @@ class Vat(database.Base):
     vat_number = Column(String(100), unique=True, nullable=True)
     image = Column(String(100))
     business_owner_id = Column(
-        String(255), ForeignKey("business_owner.business_owner_id")
+        String(255), ForeignKey("individual_user.user_id")
     )
 
-    bs_owner = relationship("Business_owner", back_populates="vt")
+    bs_owner = relationship("Individual_user", back_populates="vt")

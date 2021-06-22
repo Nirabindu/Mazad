@@ -169,10 +169,6 @@ class Business_registration(BaseModel):
     password:str
     confirm_password:str
 
-class Business_login(BaseModel):
-    phone_or_email:str
-    password:str
-
 
 # class Business_location()
 
