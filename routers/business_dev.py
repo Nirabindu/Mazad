@@ -1,4 +1,3 @@
-import random
 from fastapi import APIRouter, HTTPException, Depends, status, File, Form, UploadFile
 from sql_app import schemas, database, models
 from sqlalchemy.orm import Session
@@ -6,12 +5,12 @@ import shortuuid
 from security import hashing, tokens, oauth2
 from typing import List, Optional
 from email_validator import validate_email, EmailNotValidError
-import twilio
-from twilio.rest import Client
 import shutil
 
 
 router = APIRouter(tags=["Business-Owner"])
+
+# BUSINESS REGISTRATION
 
 
 @router.post("/business_registration/")
@@ -186,7 +185,7 @@ async def user_registration(
 #         return {"access_token": access_token, "token_type": "bearer"}
 
 
-# getting BUsiness Details
+# GETTING BUSINESS LOCATION
 @router.post("/getting_business_Location/")
 def business_details(
     store_name: str = Form(...),
@@ -238,7 +237,7 @@ def business_details(
     # elif checking_bs_owner_by_email:
     #     raise HTTPException(
     #         status_code=status.HTTP_406_NOT_ACCEPTABLE, detail=f"user already added"
-        # )
+    # )
 
     if getting_bs_owner_by_mobile and getting_bs_owner_by_mobile.role == "business":
 
@@ -257,7 +256,7 @@ def business_details(
             street=street,
             building=building,
             store_sign=url,
-            business_owner_id=getting_bs_owner_by_mobile.user_id
+            business_owner_id=getting_bs_owner_by_mobile.user_id,
         )
         db.add(new_location)
         db.commit()
@@ -292,9 +291,9 @@ def business_details(
         )
 
 
+# UPLOADING MAROOF
 @router.post("/uploading_maroof_details/")
 def maroof(
-    id: str,
     maroof_id: str = Form(...),
     maroof_expire_date: str = Form(...),
     file: UploadFile = File(...),
@@ -302,69 +301,181 @@ def maroof(
     current_user: schemas.User_login = Depends(oauth2.get_current_user),
 ):
 
-    file.filename = f"{shortuuid.uuid()}.jpg"
-    with open("static/images/maroof/" + file.filename, "wb") as img:
-        shutil.copyfileobj(file.file, img)
-    url = str("static/images/maroof/" + file.filename)
-
-    new_maroof = models.Maroof_certificate(
-        certificate_id=shortuuid.uuid(),
-        maroof_id=maroof_id,
-        maroof_expire_date=maroof_expire_date,
-        image=url,
-        business_owner_id=id,
+    getting_bs_owner_by_mobile = (
+        db.query(models.Individual_user)
+        .filter(models.Individual_user.phone == current_user)
+        .first()
     )
 
-    db.add(new_maroof)
-    db.commit()
-    db.refresh(new_maroof)
-    return {"added"}
+    getting_bs_owner_by_email = (
+        db.query(models.Individual_user)
+        .filter(models.Individual_user.email == current_user)
+        .first()
+    )
+
+    if getting_bs_owner_by_mobile and getting_bs_owner_by_mobile.role == "business":
+
+        file.filename = f"{shortuuid.uuid()}.jpg"
+        with open("static/images/maroof/" + file.filename, "wb") as img:
+            shutil.copyfileobj(file.file, img)
+        url = str("static/images/maroof/" + file.filename)
+
+        new_maroof = models.Maroof_certificate(
+            certificate_id=shortuuid.uuid(),
+            maroof_id=maroof_id,
+            maroof_expire_date=maroof_expire_date,
+            image=url,
+            business_owner_id=getting_bs_owner_by_mobile.user_id,
+        )
+
+        db.add(new_maroof)
+        db.commit()
+        db.refresh(new_maroof)
+        return {"added"}
+    elif getting_bs_owner_by_email and getting_bs_owner_by_email.role == "business":
+        file.filename = f"{shortuuid.uuid()}.jpg"
+        with open("static/images/maroof/" + file.filename, "wb") as img:
+            shutil.copyfileobj(file.file, img)
+        url = str("static/images/maroof/" + file.filename)
+
+        new_maroof = models.Maroof_certificate(
+            certificate_id=shortuuid.uuid(),
+            maroof_id=maroof_id,
+            maroof_expire_date=maroof_expire_date,
+            image=url,
+            business_owner_id=getting_bs_owner_by_email.user_id,
+        )
+
+        db.add(new_maroof)
+        db.commit()
+        db.refresh(new_maroof)
+        return {"added"}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"you do not have the right to access this url",
+        )
 
 
+# UPLOADIND CR DETAILS
 @router.post("/uploading_commercial_details/")
 def commercial_upload(
-    id: str,
     commercial_id: str = Form(...),
     commercial_expire_date: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(database.get_db),
+    current_user: schemas.User_login = Depends(oauth2.get_current_user),
 ):
 
-    file.filename = f"{shortuuid.uuid()}.jpg"
-    with open("static/images/commercial/" + file.filename, "wb") as img:
-        shutil.copyfileobj(file.file, img)
-    url = str("static/images/commercial/" + file.filename)
-
-    new_commercial = models.Commercial_certificate(
-        certificate_id=shortuuid.uuid(),
-        commercial_id=commercial_id,
-        commercial_expire_date=commercial_expire_date,
-        image=url,
-        business_owner_id=id,
+    getting_bs_owner_by_mobile = (
+        db.query(models.Individual_user)
+        .filter(models.Individual_user.phone == current_user)
+        .first()
     )
-    db.add(new_commercial)
-    db.commit()
-    db.refresh(new_commercial)
-    return {"added"}
+
+    getting_bs_owner_by_email = (
+        db.query(models.Individual_user)
+        .filter(models.Individual_user.email == current_user)
+        .first()
+    )
+
+    if getting_bs_owner_by_mobile and getting_bs_owner_by_mobile.role == "business":
+
+        file.filename = f"{shortuuid.uuid()}.jpg"
+        with open("static/images/commercial/" + file.filename, "wb") as img:
+            shutil.copyfileobj(file.file, img)
+        url = str("static/images/commercial/" + file.filename)
+
+        new_commercial = models.Commercial_certificate(
+            certificate_id=shortuuid.uuid(),
+            commercial_id=commercial_id,
+            commercial_expire_date=commercial_expire_date,
+            image=url,
+            business_owner_id=getting_bs_owner_by_mobile.user_id,
+        )
+        db.add(new_commercial)
+        db.commit()
+        db.refresh(new_commercial)
+        return {"added"}
+    elif getting_bs_owner_by_email and getting_bs_owner_by_email.role == "business":
+        file.filename = f"{shortuuid.uuid()}.jpg"
+        with open("static/images/commercial/" + file.filename, "wb") as img:
+            shutil.copyfileobj(file.file, img)
+        url = str("static/images/commercial/" + file.filename)
+
+        new_commercial = models.Commercial_certificate(
+            certificate_id=shortuuid.uuid(),
+            commercial_id=commercial_id,
+            commercial_expire_date=commercial_expire_date,
+            image=url,
+            business_owner_id=getting_bs_owner_by_email.user_id,
+        )
+        db.add(new_commercial)
+        db.commit()
+        db.refresh(new_commercial)
+        return {"added"}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"you do not have the right to access this url",
+        )
 
 
+# UPLOADIND VAT DETAILS
 @router.post("/uploading_Vat_details/")
 def vat(
-    id: str,
     vat_number: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(database.get_db),
+    current_user: schemas.User_login = Depends(oauth2.get_current_user),
 ):
-
-    file.filename = f"{shortuuid.uuid()}.jpg"
-    with open("static/images/vat/" + file.filename, "wb") as img:
-        shutil.copyfileobj(file.file, img)
-    url = str("static/images/vat/" + file.filename)
-
-    new_vat = models.Vat(
-        vat_id=shortuuid.uuid(), vat_number=vat_number, image=url, business_owner_id=id
+    getting_bs_owner_by_mobile = (
+        db.query(models.Individual_user)
+        .filter(models.Individual_user.phone == current_user)
+        .first()
     )
-    db.add(new_vat)
-    db.commit()
-    db.refresh(new_vat)
-    return {"added"}
+
+    getting_bs_owner_by_email = (
+        db.query(models.Individual_user)
+        .filter(models.Individual_user.email == current_user)
+        .first()
+    )
+
+    if getting_bs_owner_by_mobile and getting_bs_owner_by_mobile.role == "business":
+
+        file.filename = f"{shortuuid.uuid()}.jpg"
+        with open("static/images/vat/" + file.filename, "wb") as img:
+            shutil.copyfileobj(file.file, img)
+        url = str("static/images/vat/" + file.filename)
+
+        new_vat = models.Vat(
+            vat_id=shortuuid.uuid(),
+            vat_number=vat_number,
+            image=url,
+            business_owner_id=getting_bs_owner_by_mobile.user_id,
+        )
+        db.add(new_vat)
+        db.commit()
+        db.refresh(new_vat)
+        return {"added"}
+    elif getting_bs_owner_by_email and getting_bs_owner_by_email.role == "business":
+        file.filename = f"{shortuuid.uuid()}.jpg"
+        with open("static/images/vat/" + file.filename, "wb") as img:
+            shutil.copyfileobj(file.file, img)
+        url = str("static/images/vat/" + file.filename)
+
+        new_vat = models.Vat(
+            vat_id=shortuuid.uuid(),
+            vat_number=vat_number,
+            image=url,
+            business_owner_id=getting_bs_owner_by_email.user_id,
+        )
+        db.add(new_vat)
+        db.commit()
+        db.refresh(new_vat)
+        return {"added"}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"you do not have the right to access this url",
+        )
