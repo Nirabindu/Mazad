@@ -13,11 +13,19 @@ class User_registration(BaseModel):
     confirm_password:str
 
 
-
-
 class User_login(BaseModel):
     phone_or_email:str
     password:str
+
+class Send_otp(BaseModel):
+    phone:str
+
+class Verify_otp(BaseModel):
+   enter_otp:int
+
+
+
+
 
     
 class User_update(BaseModel):

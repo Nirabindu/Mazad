@@ -1,13 +1,13 @@
 import random
 from fastapi import APIRouter, HTTPException, Depends, status, File, UploadFile
+from fastapi.responses import JSONResponse
 from sql_app import schemas, models, database
 from sqlalchemy.orm import Session
 import shortuuid
 from security import hashing, tokens, oauth2
 from typing import List
 from email_validator import validate_email, EmailNotValidError
-import twilio
-from twilio.rest import Client
+
 
 
 router = APIRouter(tags=["users-individuals"])
@@ -68,41 +68,10 @@ async def user_registration(
     db.commit()
     db.refresh(adding_user)
 
-    return {"registration success please login"}
+    return "rrr"
 
 
-# sending otp
-@router.post("/send_otp/{phone_number}")
-def sending_otp(phone_number: str, db: Session = Depends(database.get_db)):
-    otp = random.randint(1000, 9999)
-    account_sid = "AC259347c6a5446e1abc14f27ad008b2d4"
-    auth_token = "a30400efd112616f828e4e8b025b5a9a"
-    client = Client(account_sid, auth_token)
-    phone_number = "+91" + phone_number
-    message = client.messages.create(
-        body="Your Mazad.com verification code is:" + str(otp),
-        from_="+14159031648",
-        to=phone_number,
-    )
-    save_otp = models.Otp(
-        otp=otp,
-    )
-    db.add(save_otp)
-    db.commit()
-    db.refresh(save_otp)
-    return {"otp send"}
 
-
-@router.post("/verify_otp/{enter_otp}")
-def otp_verify(enter_otp: int, db: Session = Depends(database.get_db)):
-    getting_otp = db.query(models.Otp).filter(enter_otp == models.Otp.otp).first()
-
-    if getting_otp:
-        db.delete(getting_otp)
-        db.commit()
-        return {"otp verified"}
-    else:
-        return {"otp expire"}
 
 
 # login apis

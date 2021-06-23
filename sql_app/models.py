@@ -8,6 +8,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     Float,
+    Time
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import DATE
@@ -44,9 +45,9 @@ class Individual_user(database.Base):
 
 class Otp(database.Base):
     __tablename__ = "otp"
-    id = Column(Integer, primary_key=True, index=True)
+    id  = Column(Integer,primary_key=True,index=True)
     otp = Column(Integer)
-    create_at = Column(DateTime, default=datetime.datetime.utcnow())
+    create_at = Column(DateTime)
 
 
 # models for Category

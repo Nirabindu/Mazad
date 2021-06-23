@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status, File, Form, UploadFile
+from fastapi.responses import JSONResponse
 from sql_app import schemas, database, models
 from sqlalchemy.orm import Session
 import shortuuid
@@ -67,8 +68,7 @@ async def user_registration(
     db.add(adding_user)
     db.commit()
     db.refresh(adding_user)
-
-    return {"registration success please login"}
+    return JSONResponse ("registration success please login")
 
 
 # # user registration for business
