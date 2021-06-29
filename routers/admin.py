@@ -1,53 +1,59 @@
 from fastapi import APIRouter, HTTPException, Depends, status, File, Form, UploadFile
-from sql_app import database, schemas, models
+from sql_app import database, schemas, models, curd
 from sqlalchemy.orm import Session
-from security import hashing, oauth2, tokens
+from security import hashing, oauth2
 from typing import List, Optional, Dict
 import shortuuid
 import shutil
 from geopy.geocoders import Nominatim
+from email_validator import validate_email, EmailNotValidError
+from fastapi.responses import JSONResponse
 
 
-router = APIRouter(tags=["Add Category"])
+router = APIRouter(tags=["Admin"])
 
 
 # adding categories to database
 
 
-@router.post("/add_category/")
+
+
+
+@router.post("/admin/add_category/")
 def add_category(
     category_name: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(database.get_db),
+    current_user: schemas.User_login = Depends(oauth2.get_current_user),
 ):
+    get_user = curd.check_user(db, current_user)
 
-    # checking is there same category already added or not
-    checking_category = (
-        db.query(models.Category)
-        .filter(category_name == models.Category.category_name)
-        .first()
-    )
-
-    if checking_category:
-        return {"Category already added"}
-    else:
-        # adding new category
-
-        # taking images
-
-        file.filename = f"{shortuuid.uuid()}.jpg"
-        with open("static/images/category_images/" + file.filename, "wb") as img:
-            shutil.copyfileobj(file.file, img)
-        url = str("static/images/category_images/" + file.filename)
-
-        new_category = models.Category(
-            category_name=category_name, cat_id=shortuuid.uuid(), image=url
+    if get_user.role == "admin":
+        checking_category = (
+            db.query(models.Category)
+            .filter(models.Category.category_name == category_name)
+            .first()
         )
-        db.add(new_category)
-        db.commit()
-        db.refresh(new_category)
 
-        return {"Category Added"}
+        if checking_category:
+            return {"Category already added"}
+        else:
+            file.filename = f"{shortuuid.uuid()}.jpg"
+            with open("static/images/category_images/" + file.filename, "wb") as img:
+                shutil.copyfileobj(file.file, img)
+            url = str("static/images/category_images/" + file.filename)
+
+            new_category = models.Category(
+                category_name=category_name, cat_id=shortuuid.uuid(), image=url
+            )
+            db.add(new_category)
+            db.commit()
+            db.refresh(new_category)
+            return {"Category Added"}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=f"unauthorize user"
+        )
 
 
 # adding subcategory
@@ -109,9 +115,8 @@ def brand(
         .filter(models.SubCategory.subcategory_name == subcategory_name)
         .first()
     )
-   
-   
-   # checking brand name already in database or not
+
+    # checking brand name already in database or not
     checking_brand_name = (
         db.query(models.Brand)
         .filter(request_body.brand_name == models.Brand.brand_name)
@@ -428,7 +433,7 @@ def get_models(brand_name: str, db: Session = Depends(database.get_db)):
 # search apis
 
 
-@router.post("/search/{search_string}", response_model=List[schemas.Get_item])
+@router.get("/search/{search_string}", response_model=List[schemas.Get_item])
 def search(search_string: str, db: Session = Depends(database.get_db)):
 
     item = (
@@ -436,24 +441,24 @@ def search(search_string: str, db: Session = Depends(database.get_db)):
         .filter(models.Post_items.model_name.ilike(f"%{search_string}%"))
         .all()
     )
-    if item:
-        return item
     sub_category = (
         db.query(models.Post_items)
         .filter(models.SubCategory.subcategory_name.ilike(f"%{search_string}%"))
         .filter(models.SubCategory.subcategory_id == models.Post_items.subcategory_id)
         .all()
     )
-    if sub_category:
-        return sub_category
-
     model = (
         db.query(models.Post_items)
         .filter(models.Models.model_name.ilike(f"%{search_string}%"))
         .filter(models.Models.model_id == models.Post_items.model_id)
         .all()
     )
-    if model:
+    if item:
+        return item
+    elif sub_category:
+        return sub_category
+
+    elif model:
         return model
     else:
         return {"Search item not found"}

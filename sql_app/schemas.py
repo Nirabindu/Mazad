@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 
+
+# schemas for user registration
 class User_registration(BaseModel):
     user_name:str
     email:str
@@ -12,7 +14,7 @@ class User_registration(BaseModel):
     password:str
     confirm_password:str
 
-
+# schemas for user login
 class User_login(BaseModel):
     phone_or_email:str
     password:str
@@ -24,15 +26,10 @@ class Verify_otp(BaseModel):
    enter_otp:int
 
 
-
-
-
-    
 class User_update(BaseModel):
     user_name:str
     email:str
     phone:str
-
 
 class Chang_password(BaseModel):
     current_password:str
@@ -40,12 +37,11 @@ class Chang_password(BaseModel):
     confirm_password:str
 
 
+class New_password(BaseModel):
+    new_password:str
+    confirm_password:str
 
 
-
-class Category(BaseModel):
-    category_name: str
-    image: str
 
 
 class Get_category(BaseModel):
@@ -161,10 +157,23 @@ class Get_story(BaseModel):
     post_item:Post_items
     
 
-class Search(Get_item):
-    pass
-    
-
+class Search(BaseModel):
+    item_id:str
+    brand_name: str
+    model_name: Optional[str]
+    style: Optional[str]
+    feature: Optional[str]
+    milage: Optional[str]
+    km_driven: Optional[str]
+    size: Optional[str]
+    condition: str
+    firm_on_my_price: bool
+    returnable: bool
+    shipping: str
+    shipping_method: str
+    description: str
+    set_price: float
+    date: datetime
 
 
 
@@ -178,7 +187,14 @@ class Business_registration(BaseModel):
     confirm_password:str
 
 
-# class Business_location()
+
+#for Admin    
+
+
+
+class Category(BaseModel):
+    category_name:str
+    image:str
 
 
 
@@ -189,9 +205,23 @@ class Business_registration(BaseModel):
 
 
 
+#cart related
+
+class Cart(BaseModel):
+    item_id:str
+    quantity:int
+
+# class Get_cart(BaseModel):
 
 
 
+# class Cart_item(BaseModel):
+    
+
+
+
+
+#For token related
 class Token(BaseModel):
     access_token: str
     token_type: str

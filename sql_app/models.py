@@ -16,7 +16,7 @@ from sql_app import database
 import datetime
 
 
-# Model for Individual User
+# Model for  User
 class Individual_user(database.Base):
     __tablename__ = "individual_user"
 
@@ -40,6 +40,9 @@ class Individual_user(database.Base):
     vt = relationship("Vat", back_populates="bs_owner")
 
 
+    # cart = relationship("Cart",back_populates="individual_user")
+
+
 # models for otp
 
 
@@ -47,6 +50,7 @@ class Otp(database.Base):
     __tablename__ = "otp"
     id  = Column(Integer,primary_key=True,index=True)
     otp = Column(Integer)
+    phone = Column(String(100))
     create_at = Column(DateTime)
 
 
@@ -63,7 +67,7 @@ class Category(database.Base):
     post_item = relationship("Post_items", back_populates="category")
 
 
-# models for SubCategory
+# models for SubCategory admin
 class SubCategory(database.Base):
     __tablename__ = "subcategory"
 
@@ -158,6 +162,7 @@ class Post_items(database.Base):
     brand = relationship("Brand", back_populates="post_item")
     image_for_item = relationship("Images_for_item", back_populates="post_item")
     story = relationship("Story", back_populates="post_item")
+    # cart = relationship("Cart",back_populates='post_item')
 
 
 class Images_for_item(database.Base):
@@ -256,3 +261,14 @@ class Vat(database.Base):
     )
 
     bs_owner = relationship("Individual_user", back_populates="vt")
+
+
+class Cart(database.Base):
+    __tablename__ = "cart"
+    cart_id = Column(Integer,primary_key = True,index=True)
+    quantity = Column(Integer,default=1)
+    # item_id = ForeignKey('items.item_id')
+    
+    # use_id = ForeignKey('individual_user.user_id')
+    # post_item = relationship("Post_items",back_populates="cart")
+    # individual_user = relationship("Individual_user",back_populates="cart")
