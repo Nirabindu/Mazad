@@ -1,13 +1,10 @@
 import random
-from fastapi import APIRouter, HTTPException, Depends, status, File, UploadFile
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
-from sql_app import schemas, models, database
+from fastapi import APIRouter, HTTPException, Depends, status
+from sql_app import schemas, models, database,curd
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-from security import hashing, tokens, oauth2
-import twilio
-from twilio.rest import Client
+from datetime import datetime
+
+
 
 
 router = APIRouter(tags=["OTP"])
@@ -17,56 +14,36 @@ router = APIRouter(tags=["OTP"])
 @router.post("/send_otp/")
 def sending_otp(request: schemas.Send_otp, db: Session = Depends(database.get_db)):
 
-    checking_otp = db.query(models.Otp).filter(models.Otp.phone == request.phone).first()
-
+    checking_otp = curd.checking_otp(db,request.phone)
     if checking_otp:
         db.delete(checking_otp)
         db.commit()
-        otp = random.randint(1000, 9999)
-        account_sid = "AC259347c6a5446e1abc14f27ad008b2d4"
-        auth_token = "a30400efd112616f828e4e8b025b5a9a"
-        client = Client(account_sid, auth_token)
-        phone_number = "+91" + request.phone
-        message = client.messages.create(
-            body="Your Mazad.com verification code is:" + str(otp),
-            from_="+14159031648",
-            to=phone_number,
-        )
+
+        getting_otp = curd.create_otp(request.phone)
+
         current_time = datetime.today()
 
-        save_otp = models.Otp(otp=otp, phone=request.phone, create_at=current_time)
+        save_otp = models.Otp(otp=getting_otp, phone=request.phone, create_at=current_time)
         db.add(save_otp)
         db.commit()
         db.refresh(save_otp)
-        return JSONResponse("otp send")
+        return {'status':'otp send'}
     else:
-        otp = random.randint(1000, 9999)
-        account_sid = "AC259347c6a5446e1abc14f27ad008b2d4"
-        auth_token = "a30400efd112616f828e4e8b025b5a9a"
-        client = Client(account_sid, auth_token)
-        phone_number = "+91" + request.phone
-        message = client.messages.create(
-            body="Your Mazad.com verification code is:" + str(otp),
-            from_="+14159031648",
-            to=phone_number,
-        )
+        getting_otp = curd.create_otp(request.phone)
         current_time = datetime.today()
 
-        save_otp = models.Otp(otp=otp, phone=request.phone, create_at=current_time)
+        save_otp = models.Otp(otp=getting_otp, phone=request.phone, create_at=current_time)
         db.add(save_otp)
         db.commit()
         db.refresh(save_otp)
-        return JSONResponse("otp send")    
+        return {'status':'otp send'}    
 
-
+# verify otp
 @router.post("/verify_otp/")
 def otp_verify(request: schemas.Verify_otp, db: Session = Depends(database.get_db)):
-    getting_otp = (
-        db.query(models.Otp).filter(request.enter_otp == models.Otp.otp).first()
-    )
-
+    getting_otp = curd.getting_otp(db,request.enter_otp)
     if getting_otp:
-
+        
         date_time = datetime.today().replace(microsecond=0)
 
         date_from_database = getting_otp.create_at
@@ -84,11 +61,11 @@ def otp_verify(request: schemas.Verify_otp, db: Session = Depends(database.get_d
         if day == 0 and hr < 1 and min <= 1 and sec <= 30:
             db.delete(getting_otp)
             db.commit()
-            return JSONResponse("otp verified")
+            return {'status':'otp verified'}
         else:
             db.delete(getting_otp)
             db.commit()
-            return JSONResponse("Otp Expire")
+            return {'status':'otp expire'}
     else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"otp you entered not matched"

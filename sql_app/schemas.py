@@ -8,81 +8,53 @@ from datetime import datetime
 
 # schemas for user registration
 class User_registration(BaseModel):
-    user_name:str
-    email:str
-    phone:str
-    password:str
-    confirm_password:str
+    user_name: str
+    email: str
+    phone: str
+    password: str
+    confirm_password: str
+
 
 # schemas for user login
 class User_login(BaseModel):
-    phone_or_email:str
-    password:str
+    phone_or_email: str
+    password: str
 
+
+# schemas for OTP
 class Send_otp(BaseModel):
-    phone:str
+    phone: str
+
 
 class Verify_otp(BaseModel):
-   enter_otp:int
+    enter_otp: int
+
+
+# user profile related
+class Show_profile_data(BaseModel):
+    user_name: str
+    email: str
+    phone: str
+
+    class Config:
+        orm_mode = True
 
 
 class User_update(BaseModel):
-    user_name:str
-    email:str
-    phone:str
+    user_name: str
+    email: str
+    phone: str
+
 
 class Chang_password(BaseModel):
-    current_password:str
-    new_password:str
-    confirm_password:str
+    current_password: str
+    new_password: str
+    confirm_password: str
 
 
 class New_password(BaseModel):
-    new_password:str
-    confirm_password:str
-
-
-
-
-class Get_category(BaseModel):
-    category_name:str
-    class Config():
-        orm_mode = True
-
-
-class SubCategory(BaseModel):
-    subcategory_name: str
-    image: str
-
-
-
-class Get_SubCategory(BaseModel):
-    subcategory_name: str
-    class Config():
-        orm_mode = True
-
-
-class Brand(BaseModel):
-    brand_name: str
-
-
-
-class Get_brand(BaseModel):
-    brand_name: str
-    class Config():
-        orm_mode = True
-
-
-class Models(BaseModel):
-    model_name: str
-
-
-
-class Get_models(BaseModel):
-    model_name:str
-    class Config():
-        orm_mode = True
-
+    new_password: str
+    confirm_password: str
 
 
 class Post_items(BaseModel):
@@ -109,27 +81,30 @@ class Post_items(BaseModel):
         orm_mode = True
 
 
+# For getting address
 class Address(BaseModel):
-    latitude: Optional[float]=None
-    longitude: Optional[float]=None
-    state: Optional[str]=None
-    district: Optional[str]=None
-    city:Optional[str]=None
-    street:Optional[str]=None
-    Building:Optional[str]=None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    city: Optional[str] = None
+    street: Optional[str] = None
+    Building: str
+
     class Config:
         orm_mode = True
+
 
 class Get_address(BaseModel):
-    state: Optional[str]=None
-    district: Optional[str]=None
-    city:Optional[str]=None
-    street:Optional[str]=None
-    Building:Optional[str]=None
-    address_get:Optional[str]=None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    city: Optional[str] = None
+    street: Optional[str] = None
+    Building: Optional[str] = None
+    address_get: Optional[str] = None
+
     class Config:
         orm_mode = True
-
 
 
 class Images_for_item(BaseModel):
@@ -142,23 +117,25 @@ class Images_for_item(BaseModel):
 class Get_item(Post_items):
     address: Get_address
     image_for_item: List[Images_for_item] = []
+
     class Config:
         orm_mode = True
 
 
 class Upload_story(BaseModel):
-    url : str
-    class Config():
+    url: str
+
+    class Config:
         orm_mode = True
 
 
 class Get_story(BaseModel):
-    url:str
-    post_item:Post_items
-    
+    url: str
+    post_item: Post_items
+
 
 class Search(BaseModel):
-    item_id:str
+    item_id: str
     brand_name: str
     model_name: Optional[str]
     style: Optional[str]
@@ -176,52 +153,86 @@ class Search(BaseModel):
     date: datetime
 
 
-
-
 # for b2c
 class Business_registration(BaseModel):
-    user_name :str
-    phone:str
-    email:str
-    password:str
-    confirm_password:str
+    user_name: str
+    phone: str
+    email: str
+    password: str
+    confirm_password: str
 
 
-
-#for Admin    
-
-
-
+# For admin side
 class Category(BaseModel):
-    category_name:str
-    image:str
+    category_name: str
+    image: str
 
 
+class Sub_category(BaseModel):
+    subcategory_name: str
+    image: str
 
 
+class Brand(BaseModel):
+    subcategory_name: str
+    brand_name: str
 
 
+class Models(BaseModel):
+    subcategory_name: str
+    brand_name: str
+    model_name: str
 
 
+class Get_category(BaseModel):
+    cat_id: str
+    category_name: str
+    image: str
+
+    class Config:
+        orm_mode = True
 
 
-#cart related
+class Get_SubCategory(BaseModel):
+    subcategory_id: str
+    subcategory_name: str
+    image: str
+
+    class Config:
+        orm_mode = True
+
+
+class Get_brand(BaseModel):
+    brand_id: str
+    brand_name: str
+
+    class Config:
+        orm_mode = True
+
+
+class Get_models(BaseModel):
+    model_id:str
+    model_name: str
+
+    class Config:
+        orm_mode = True
+
+
+# cart related
+
 
 class Cart(BaseModel):
-    item_id:str
-    quantity:int
+    item_id: str
+    quantity: int
+
 
 # class Get_cart(BaseModel):
 
 
-
 # class Cart_item(BaseModel):
-    
 
 
-
-
-#For token related
+# For token related
 class Token(BaseModel):
     access_token: str
     token_type: str

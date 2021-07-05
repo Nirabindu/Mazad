@@ -11,7 +11,6 @@ from sqlalchemy import (
     Time
 )
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.sqltypes import DATE
 from sql_app import database
 import datetime
 
@@ -27,7 +26,7 @@ class Individual_user(database.Base):
     password = Column(String(255))
     status = Column(Boolean, default=True)
     role = Column(String(20))
-    create_at = Column(DateTime, default=datetime.datetime.utcnow)
+    create_at = Column(DateTime, default=datetime.datetime.today())
 
     post_item = relationship("Post_items", back_populates="individual_user")
     address = relationship("Address", back_populates="individual_user")
@@ -62,7 +61,7 @@ class Category(database.Base):
     category_name = Column(String(50), nullable=False, unique=True)
     status = Column(Boolean, default=True)
     image = Column(String(255))
-    create_at = Column(DateTime, default=datetime.datetime.utcnow)
+    create_at = Column(DateTime, default=datetime.datetime.today())
     subcategory = relationship("SubCategory", back_populates="category")
     post_item = relationship("Post_items", back_populates="category")
 
@@ -75,11 +74,12 @@ class SubCategory(database.Base):
     subcategory_name = Column(String(50), nullable=False, unique=True)
     image = Column(String(255))
     status = Column(Boolean, default=True)
-    create_at = Column(DateTime, default=datetime.datetime.utcnow)
+    create_at = Column(DateTime, default=datetime.datetime.today())
     cat_id = Column(String(255), ForeignKey("category.cat_id"))
     category = relationship("Category", back_populates="subcategory")
     brand = relationship("Brand", back_populates="subcategory")
     post_item = relationship("Post_items", back_populates="subcategory")
+    model = relationship("Models",back_populates="subcategory")
 
 
 # models for Brand Name
@@ -101,7 +101,10 @@ class Models(database.Base):
     model_id = Column(String(255), primary_key=True, index=True)
     model_name = Column(String(255), unique=True)
     brand_id = Column(String(255), ForeignKey("brand.brand_id"))
+    subcategory_id = Column(String(255),ForeignKey("subcategory.subcategory_id"))
     brand = relationship("Brand", back_populates="model")
+    subcategory = relationship("SubCategory",back_populates="model")
+
     post_item = relationship("Post_items", back_populates="model")
 
 

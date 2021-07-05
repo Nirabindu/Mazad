@@ -4,7 +4,7 @@ from security import tokens
 from sql_app import models, database, schemas
 from sqlalchemy.orm import Session, session
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login/")
 
 
 def get_current_user(
