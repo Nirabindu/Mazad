@@ -57,6 +57,8 @@ class New_password(BaseModel):
     confirm_password: str
 
 
+# individual function
+# post item
 class Post_items(BaseModel):
     category_name: str
     subcategory_name: str
@@ -94,14 +96,16 @@ class Address(BaseModel):
     class Config:
         orm_mode = True
 
-
+# get all address
 class Get_address(BaseModel):
+    address_id:str
     state: Optional[str] = None
     district: Optional[str] = None
     city: Optional[str] = None
     street: Optional[str] = None
     Building: Optional[str] = None
     address_get: Optional[str] = None
+    user_id:str
 
     class Config:
         orm_mode = True
@@ -114,12 +118,31 @@ class Images_for_item(BaseModel):
         orm_mode = True
 
 
+#get items
+
 class Get_item(Post_items):
     address: Get_address
     image_for_item: List[Images_for_item] = []
 
     class Config:
         orm_mode = True
+
+
+# get minimal details of items
+class Get_minimal_details_of_item(BaseModel):
+    item_id:str
+    subcategory_name: str
+    brand_name: str
+    model_name: Optional[str]
+    shipping: str
+    description: str
+    set_price: float
+    date: datetime
+    class Config:
+        orm_mode = True
+
+
+
 
 
 class Upload_story(BaseModel):
@@ -184,6 +207,9 @@ class Models(BaseModel):
     model_name: str
 
 
+
+
+#get all data
 class Get_category(BaseModel):
     cat_id: str
     category_name: str

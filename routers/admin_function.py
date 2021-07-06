@@ -6,8 +6,6 @@ from typing import List, Optional
 import shortuuid
 import shutil
 
-from fastapi.responses import JSONResponse
-
 
 router = APIRouter(tags=["admin_side_function"])
 
@@ -37,7 +35,7 @@ def add_category(
             db.add(new_category)
             db.commit()
             db.refresh(new_category)
-            return JSONResponse("Category Added")
+            return {'status':'category added'}
         else:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=f"Category already added"
@@ -78,9 +76,9 @@ def subcategory(
             db.add(new_subCategory)
             db.commit()
             db.refresh(new_subCategory)
-            return JSONResponse("SubCategory added")
+            return {'status':'subcategory added'}
         else:
-            return JSONResponse("Sub category already added")
+            return {'status':'subcategory already added'}
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail=f"unauthorized user"
@@ -207,11 +205,7 @@ def get_models(subcategory_name:str, brand_name:str, db: Session = Depends(datab
 
     get_brands_id = curd.get_brand_by_subcategory_brand_name(db,get_particular_subcategory.subcategory_id,brand_name)
 
-    get_models = (
-        db.query(models.Models)
-        .filter(models.Models.brand_id == get_brands_id.brand_id)
-        .all()
-    )
+    get_models = curd.get_models(db,get_brands_id.brand_id)
 
     return get_models
 
@@ -225,169 +219,4 @@ def get_models(subcategory_name:str, brand_name:str, db: Session = Depends(datab
 
 
 
-# # post item
 
-
-# @router.post("/post_items/{subcategory_name}/{brand_name}/{model_name}")
-# def post_item(
-#     subcategory_name: str,
-#     brand_name: str,
-#     model_name: str,
-#     style: Optional[str] = Form(None),
-#     feature: Optional[str] = Form(None),
-#     milage: Optional[str] = Form(None),
-#     km_driven: Optional[str] = Form(None),
-#     size: Optional[str] = Form(None),
-#     condition: str = Form(...),
-#     firm_on_my_price: bool = Form(...),
-#     returnable: bool = Form(...),
-#     shipping: str = Form(...),
-#     shipping_method: str = Form(...),
-#     description: str = Form(...),
-#     set_product_weight: str = Form(...),
-#     set_price: float = Form(...),
-#     file: List[UploadFile] = File(...),
-#     db: Session = Depends(database.get_db),
-#     current_user: schemas.User_login = Depends(oauth2.get_current_user),
-# ):
-
-#     get_subcategory = (
-#         db.query(models.SubCategory)
-#         .filter(subcategory_name == models.SubCategory.subcategory_name)
-#         .first()
-#     )
-
-#     get_category_name = (
-#         db.query(models.Category)
-#         .filter(models.Category.cat_id == get_subcategory.cat_id)
-#         .first()
-#     )
-
-#     get_brand_id = (
-#         db.query(models.Brand).filter(models.Brand.brand_name == brand_name).first()
-#     )
-
-#     get_models_id = (
-#         db.query(models.Models).filter(models.Models.model_name == model_name).first()
-#     )
-
-#     get_address_id = (
-#         db.query(models.Address)
-#         .filter(models.Address.user_id == current_user.user_id)
-#         .first()
-#     )
-
-#     adding_item = models.Post_items(
-#         item_id=shortuuid.uuid(),
-#         category_name=get_category_name.category_name,
-#         subcategory_name=get_subcategory.subcategory_name,
-#         brand_name=get_brand_id.brand_name,
-#         model_name=get_models_id.model_name,
-#         style=style,
-#         feature=feature,
-#         milage=milage,
-#         km_driven=km_driven,
-#         size=size,
-#         condition=condition,
-#         firm_on_my_price=firm_on_my_price,
-#         returnable=returnable,
-#         shipping=shipping,
-#         shipping_method=shipping_method,
-#         description=description,
-#         set_product_weight=set_product_weight,
-#         set_price=set_price,
-#         user_id=current_user.user_id,
-#         cat_id=get_category_name.cat_id,
-#         subcategory_id=get_subcategory.subcategory_id,
-#         brand_id=get_brand_id.brand_id,
-#         model_id=get_models_id.model_id,
-#         address_id=get_address_id.address_id,
-#     )
-#     db.add(adding_item)
-#     db.commit()
-#     db.refresh(adding_item)
-
-#     item = (
-#         db.query(models.Post_items)
-#         .filter(models.Post_items.item_id == adding_item.item_id)  # problems
-#         .first()
-#     )
-
-#     # taking images
-
-#     for i in file:
-#         i.filename = f"{shortuuid.uuid()}.jpg"
-#         with open("static/images/item_images/" + i.filename, "wb") as img:
-#             shutil.copyfileobj(i.file, img)
-#         url = str("static/images/item_images/" + i.filename)
-
-#         new_item_img = models.Images_for_item(
-#             img_id=shortuuid.uuid(), url=url, item_id=item.item_id
-#         )
-#         db.add(new_item_img)
-#         db.commit()
-#         db.refresh(new_item_img)
-
-#     return {"Item Post"}
-
-
-# # GETTING ALL APIS GET
-
-
-# @router.get("/get_post_items/", response_model=List[schemas.Get_item])
-# def get_items(db: Session = Depends(database.get_db)):
-
-#     get_items = db.query(models.Post_items).all()
-
-#     return get_items
-
-
-# # getting all post item post by user
-# @router.get("/my_post_items/", response_model=List[schemas.Get_item])
-# def get_my_items(
-#     db: Session = Depends(database.get_db),
-#     current_user: schemas.User_login = Depends(oauth2.get_current_user),
-# ):
-#     get_won_items = (
-#         db.query(models.Post_items)
-#         .filter(models.Post_items.user_id == current_user.user_id)
-#         .all()
-#     )
-#     return get_won_items
-
-
-
-
-
-# # search apis
-
-
-# @router.get("/search/{search_string}", response_model=List[schemas.Get_item])
-# def search(search_string: str, db: Session = Depends(database.get_db)):
-
-#     item = (
-#         db.query(models.Post_items)
-#         .filter(models.Post_items.model_name.ilike(f"%{search_string}%"))
-#         .all()
-#     )
-#     sub_category = (
-#         db.query(models.Post_items)
-#         .filter(models.SubCategory.subcategory_name.ilike(f"%{search_string}%"))
-#         .filter(models.SubCategory.subcategory_id == models.Post_items.subcategory_id)
-#         .all()
-#     )
-#     model = (
-#         db.query(models.Post_items)
-#         .filter(models.Models.model_name.ilike(f"%{search_string}%"))
-#         .filter(models.Models.model_id == models.Post_items.model_id)
-#         .all()
-#     )
-#     if item:
-#         return item
-#     elif sub_category:
-#         return sub_category
-
-#     elif model:
-#         return model
-#     else:
-#         return {"Search item not found"}

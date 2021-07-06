@@ -178,30 +178,43 @@ def checking_model(db, model_name):
     )
     return checking_model
 
-#getting categories
+
+# getting categories
+
 
 def getting_categories(db):
     get_categories = db.query(models.Category).all()
     return get_categories
-#get particular categories by category name
-def getting_particular_category(db,category_name):
-    get_category = db.query(models.Category).filter(models.Category.category_name == category_name).first()  
-    return get_category 
 
-#get all subcategory
+
+# get particular categories by category name
+def getting_particular_category(db, category_name):
+    get_category = (
+        db.query(models.Category)
+        .filter(models.Category.category_name == category_name)
+        .first()
+    )
+    return get_category
+
+
+# get all subcategory
 def getting_all_subcategory(db):
     get_subcategories = db.query(models.SubCategory).all()
     return get_subcategories
-#getting all sub category under a category
-def getting_subcategory_under_category(db,category_id):
+
+
+# getting all sub category under a category
+def getting_subcategory_under_category(db, category_id):
     get_subcategory_under_category = (
         db.query(models.SubCategory)
         .filter(models.SubCategory.cat_id == category_id)
         .all()
     )
     return get_subcategory_under_category
-#getting particular subcategory
-def get_particular_subcategory(db,subcategory_name):
+
+
+# getting particular subcategory
+def get_particular_subcategory(db, subcategory_name):
     get_particular_subcategory = (
         db.query(models.SubCategory)
         .filter(models.SubCategory.subcategory_name == subcategory_name)
@@ -209,16 +222,62 @@ def get_particular_subcategory(db,subcategory_name):
     )
     return get_particular_subcategory
 
-#get brand under subcategory
-def get_brand(db,subcat_id):
-    get_brand = db.query(models.Brand).filter(models.Brand.subcategory_id == subcat_id).all()
+
+# get brand under subcategory
+def get_brand(db, subcat_id):
+    get_brand = (
+        db.query(models.Brand).filter(models.Brand.subcategory_id == subcat_id).all()
+    )
     return get_brand
 
 
-
-#get brand by subcategory and brand name
-def get_brand_by_subcategory_brand_name(db,subcat_id,brad_name):
-    getting_brand = db.query(models.Brand).filter(models.Brand.subcategory_id == subcat_id).having(models.Brand.brand_name == brad_name).first() 
+# get brand by subcategory and brand name
+def get_brand_by_subcategory_brand_name(db, subcat_id, brad_name):
+    getting_brand = (
+        db.query(models.Brand)
+        .filter(models.Brand.subcategory_id == subcat_id)
+        .having(models.Brand.brand_name == brad_name)
+        .first()
+    )
     return getting_brand
 
-# def get_models(db):
+
+def get_models(db, brand_id):
+    get_models = (
+        db.query(models.Models).filter(models.Models.brand_id == brand_id).all()
+    )
+    return get_models
+
+
+# get all address
+def get_address(db):
+    get_address = db.query(models.Address).all()
+    return get_address
+
+
+# get won address
+def get_won_address(db, user_id):
+    get_won_address = db.query(models.Address).filter(models.Address.user_id == user_id).all()
+    return get_won_address
+
+def get_address_by_address_id(db,address_id):
+    get_address = db.query(models.Address).filter(models.Address.address_id == address_id).first()
+    return get_address
+
+
+def get_item_all(db):
+    get_all = db.query(models.Post_items).all()
+    return get_all
+
+def get_item_by_id(db,item_id):
+    get_item = db.query(models.Post_items).filter(models.Post_items.item_id == item_id).first()
+    return get_item
+
+
+def get_won_post_items(db,user_id):
+    get_won_items = (
+        db.query(models.Post_items)
+        .filter(models.Post_items.user_id == user_id)
+        .all()
+    )
+    return get_won_items
